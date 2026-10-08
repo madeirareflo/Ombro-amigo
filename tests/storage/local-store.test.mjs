@@ -6,7 +6,9 @@ import {
   clearLocalState,
   saveAcknowledgement,
   loadAcknowledgement,
-  clearAcknowledgement
+  clearAcknowledgement,
+  getLocalDataStatus,
+  clearAllLocalData
 } from '../../storage/local-store.js';
 
 function fakeStorage() {
@@ -62,4 +64,37 @@ test('ciência do teste pode ser removida localmente', () => {
   saveAcknowledgement(storage);
   clearAcknowledgement(storage);
   assert.equal(loadAcknowledgement(storage),null);
+});
+
+
+test('status local informa presença sem expor conteúdo', () => {
+  const storage=fakeStorage();
+  saveAcknowledgement(storage);
+  saveLocalState({
+    session:{mode:'session',entries:[{text:'conteúdo sensível'}]},
+    view:'conversation',
+    summaryDraft:'rascunho'
+  },storage);
+  const status=getLocalDataStatus(storage);
+  assert.equal(status.hasConversation,true);
+  assert.equal(status.hasAcknowledgement,true);
+  assert.ok(status.savedAt);
+  assert.ok(status.acceptedAt);
+  assert.equal(Object.hasOwn(status,'session'),false);
+  assert.equal(Object.hasOwn(status,'summaryDraft'),false);
+});
+
+test('apagar tudo remove conversa e ciência do teste', () => {
+  const storage=fakeStorage();
+  saveAcknowledgement(storage);
+  saveLocalState({session:{entries:[{text:'x'}]}},storage);
+  clearAllLocalData(storage);
+  assert.equal(loadLocalState(storage),null);
+  assert.equal(loadAcknowledgement(storage),null);
+  assert.deepEqual(getLocalDataStatus(storage),{
+    hasConversation:false,
+    savedAt:null,
+    hasAcknowledgement:false,
+    acceptedAt:null
+  });
 });
