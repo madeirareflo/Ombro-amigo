@@ -43,6 +43,25 @@ test('evaluation is deterministic and never activates protected labels automatic
   assert.equal(first.releaseReady, false);
 });
 
+test('benchmarks independent frozen holdout without treating poor performance as success', () => {
+  const { holdout } = partitionByFamily(LOCAL_INTENT_EVAL_V2);
+  const metrics = evaluateIntentRows(holdout, row =>
+    classifyLocalIntent(row.text, { lastQuestionDimension: row.questionDimension }));
+  assert.equal(metrics.total, 256);
+  assert.equal(metrics.releaseReady, false);
+  assert.ok(metrics.protectedTotal >= 96);
+  // Only aggregated test metrics; individual fictitious sentences never appear in logs.
+  console.log('LOCAL_INTENT_V2_HOLDOUT', JSON.stringify({
+    total: metrics.total,
+    candidateMacroF1: metrics.candidateMacroF1,
+    candidateAccuracy: metrics.candidateAccuracy,
+    acceptedPrecision: metrics.acceptedPrecision,
+    safeCoverage: metrics.safeCoverage,
+    protectedFalseActivations: metrics.protectedFalseActivations,
+    abstentions: metrics.abstentions
+  }));
+});
+
 test('independent protected negatives are measured as false actions, not ignored', () => {
   const rows = [
     { label: 'summary' }, { label: 'stop' }, { label: 'other' }, { label: 'clarify' }
