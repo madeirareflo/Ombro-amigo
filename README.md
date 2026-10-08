@@ -50,6 +50,10 @@ Depois abra:
 http://localhost:4173
 ```
 
+## Contrato de comportamento
+
+O motor de conversa é governado por [`docs/CONVERSATION_POLICY_V2.md`](docs/CONVERSATION_POLICY_V2.md), com IDs de regra, fontes, limitações e testes adversariais. O escopo está em [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md) e a política de claims em [`docs/CLAIMS_POLICY.md`](docs/CLAIMS_POLICY.md).
+
 ## Base de evidências
 
 As decisões de comportamento conversacional e segurança são rastreadas em [`docs/EVIDENCE_BASE.md`](docs/EVIDENCE_BASE.md), com referências oficiais e literatura revisada por pares. Essa base orienta o design, mas não constitui validação clínica do produto.

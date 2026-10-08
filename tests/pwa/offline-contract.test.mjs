@@ -31,6 +31,7 @@ test('cache offline inclui os módulos essenciais e o ícone', async () => {
     './app/main.js',
     './app/clipboard.js',
     './conversation/engine.js',
+    './conversation/policy.js',
     './storage/local-store.js',
     './safety/policy.js'
   ]) {
