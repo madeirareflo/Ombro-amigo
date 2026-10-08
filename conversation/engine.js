@@ -33,31 +33,37 @@ const GENERIC_FALLBACKS = {
 const BOUNDARY_RULES = [
   {
     key: 'diagnosisRequest',
+    ruleId: 'CONV-DIAGNOSIS-01',
     pattern: /\b(você acha que eu tenho|vc acha que eu tenho|será que eu tenho|sera que eu tenho|isso significa que eu tenho|você acha que isso é|vc acha que isso e)\b/i,
     response: 'Eu não consigo confirmar nem descartar um diagnóstico. Posso ajudar a organizar o que você percebeu para levar ao profissional. Qual sinal ou situação você gostaria de contar primeiro?'
   },
   {
     key: 'therapistPrediction',
+    ruleId: 'CONV-THERAPIST-PREDICTION-01',
     pattern: /((meu|minha)\s+psic[oó]log[oa].{0,45}(vai|iria|pode).{0,30}(julgar|pensar|achar|reagir))|(o que\s+(meu|minha)\s+psic[oó]log[oa].{0,30}(vai|iria).{0,20}(pensar|achar))/i,
     response: 'Eu não consigo prever como seu psicólogo vai reagir. Posso ajudar a transformar esse receio em algo que você leve para a sessão. Qual é a parte que você mais teme dizer?'
   },
   {
     key: 'dependency',
+    ruleId: 'CONV-DEPENDENCY-01',
     pattern: /(só consigo falar com você|so consigo falar com voce|prefiro falar com você|prefiro falar com voce|você é a única pessoa|voce e a unica pessoa|só você me entende|so voce me entende)/i,
     response: 'Posso ajudar a preparar o que você quer dizer, mas não quero ocupar o lugar de uma pessoa ou profissional. O que você gostaria de conseguir levar desta conversa para alguém de confiança ou para seu psicólogo?'
   },
   {
     key: 'correction',
+    ruleId: 'CONV-REPAIR-01',
     pattern: /(não foi isso|nao foi isso|você entendeu errado|voce entendeu errado|não me representa|nao me representa|não foi o que eu quis dizer|nao foi o que eu quis dizer|você está interpretando|voce esta interpretando)/i,
     response: 'Você está me corrigindo, então vou descartar essa formulação. O que ficou errado: o fato, a emoção ou a forma de dizer?'
   },
   {
     key: 'stop',
+    ruleId: 'AUTONOMY-SKIP-01',
     pattern: /\b(não quero aprofundar|nao quero aprofundar|quero parar|prefiro parar|chega por hoje|não quero continuar|nao quero continuar)\b/i,
     response: 'Tudo bem. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
   },
   {
     key: 'contradiction',
+    ruleId: 'CONV-REFLECT-01',
     pattern: /(?=.*\b(quero terminar|quero me afastar)\b)(?=.*\b(medo de perder|medo de ficar sem)\b)/i,
     response: 'De um lado, você quer se afastar; de outro, tem medo de perder essa pessoa. As duas coisas parecem verdadeiras ao mesmo tempo para você?'
   }
@@ -69,6 +75,7 @@ const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|difícil dizer|di
 const SIGNALS = [
   {
     key: 'uncertainty',
+    ruleId: 'CONV-AFFECT-LABEL-01',
     pattern: UNCERTAINTY_PATTERN,
     questions: [
       'Faz sentido ainda não ter uma palavra. Isso aparece mais no corpo, nos pensamentos, na vontade de fazer coisas ou nas relações?',
@@ -77,6 +84,7 @@ const SIGNALS = [
   },
   {
     key: 'body',
+    ruleId: 'CONV-REFLECT-01',
     pattern: /\b(corpo|coração|coracao|peito|respiração|respiracao|tremor|tenso|tensa|cansaço|cansaco|dor|sono|apetite)\b/i,
     questions: [
       'Você percebeu isso no corpo. Em que momento essa sensação costuma ficar mais forte?',
@@ -85,6 +93,7 @@ const SIGNALS = [
   },
   {
     key: 'thought',
+    ruleId: 'CONV-REFLECT-01',
     pattern: /\b(pensei|pensando|pensamento|imagino|imaginei|acho que|minha cabeça|na minha cabeça)\b/i,
     questions: [
       'Você trouxe um pensamento que aparece nessa situação. Qual parte dele volta com mais frequência?',
@@ -93,6 +102,7 @@ const SIGNALS = [
   },
   {
     key: 'emotion',
+    ruleId: 'CONV-REFLECT-01',
     pattern: /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)\b/i,
     questions: [
       'Você nomeou uma emoção para essa experiência. O que estava acontecendo quando ela apareceu?',
@@ -101,6 +111,7 @@ const SIGNALS = [
   },
   {
     key: 'relationship',
+    ruleId: 'CONV-REFLECT-01',
     pattern: /\b(namorado|namorada|marido|esposa|parceiro|parceira|mãe|mae|pai|irmão|irmao|irmã|irma|amigo|amiga|colega|família|familia|relacionamento)\b/i,
     questions: [
       'Você trouxe uma interação com outra pessoa. Qual parte dela ficou mais difícil de levar para a sessão?',
@@ -109,6 +120,7 @@ const SIGNALS = [
   },
   {
     key: 'selfJudgment',
+    ruleId: 'CONV-REFLECT-01',
     pattern: /\b(sou ridículo|sou ridicula|sou ridículo|sou idiota|sou horrível|sou horrivel|sou fraco|sou fraca|que vergonha de mim)\b/i,
     questions: [
       'Você usou um rótulo sobre si. O que aconteceu para você acabar se descrevendo desse jeito?',
@@ -117,6 +129,7 @@ const SIGNALS = [
   },
   {
     key: 'avoidance',
+    ruleId: 'CONV-REFLECT-01',
     pattern: /\b(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei)\b/i,
     questions: [
       'Você trouxe uma dificuldade para falar sobre isso. O que pesa mais: começar o assunto, continuar depois de começar ou lidar com a reação da outra pessoa?',
@@ -136,6 +149,8 @@ export function createConversation({ mode, depth = 'light' }) {
     usedQuestions: [],
     skips: 0,
     lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session,
+    lastRuleId: 'CONV-START-01',
+    ruleHistory: [{ turn: 0, ruleId: 'CONV-START-01' }],
     transcript: [
       { role: 'ai', text: START_QUESTIONS[mode] || START_QUESTIONS.session }
     ]
@@ -161,15 +176,20 @@ export function nextQuestion(state, answer) {
   if (!Array.isArray(state.transcript)) state.transcript = [];
   state.transcript.push({ role: 'user', text });
 
-  const question = state.mode === 'record'
-    ? 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.'
-    : chooseAdaptiveQuestion(state, text);
+  const turn = state.mode === 'record'
+    ? {
+        text: 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.',
+        ruleId: 'CONV-START-01'
+      }
+    : chooseAdaptiveTurn(state, text);
 
   state.turn += 1;
-  state.lastQuestion = question;
-  markQuestionUsed(state, question);
-  state.transcript.push({ role: 'ai', text: question });
-  return question;
+  state.lastQuestion = turn.text;
+  state.lastRuleId = turn.ruleId;
+  recordRule(state, turn.ruleId);
+  markQuestionUsed(state, turn.text);
+  state.transcript.push({ role: 'ai', text: turn.text });
+  return turn.text;
 }
 
 export function skipQuestion(state) {
@@ -185,47 +205,69 @@ export function skipQuestion(state) {
   const question = state.skips >= 2
     ? 'Sem problema. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
     : 'Sem problema. Podemos ir por outro caminho: você prefere falar do que aconteceu, de como ficou depois, ou ir direto para uma síntese?';
+  const ruleId='AUTONOMY-SKIP-01';
 
   state.lastQuestion = question;
+  state.lastRuleId = ruleId;
+  recordRule(state, ruleId);
   markQuestionUsed(state, question);
   state.transcript.push({ role: 'ai', text: question });
   return question;
 }
 
-export function chooseAdaptiveQuestion(state, answer) {
+export function chooseAdaptiveTurn(state, answer) {
   const text = String(answer || '').trim();
 
   const boundary = matchBoundaryRule(text);
-  if (boundary) return boundary.response;
+  if (boundary) return { text: boundary.response, ruleId: boundary.ruleId };
 
   if (SENSITIVE_TOPIC_PATTERN.test(text)) {
-    return 'Você nomeou um assunto sensível. Não precisamos entrar em detalhes para registrá-lo. Você prefere continuar com cuidado, só registrar, ou transformar isso em algo para levar à sessão?';
+    return {
+      text: 'Você nomeou um assunto sensível. Não precisamos entrar em detalhes para registrá-lo. Você prefere continuar com cuidado, só registrar, ou transformar isso em algo para levar à sessão?',
+      ruleId: 'SAFETY-SENSITIVE-01'
+    };
   }
 
   if (text.length >= 280) {
-    return 'Você trouxe várias partes de uma vez. Para não reorganizar por você, prefere começar pelo que aconteceu primeiro ou pelo que mais gostaria de levar à sessão?';
+    return {
+      text: 'Você trouxe várias partes de uma vez. Para não reorganizar por você, prefere começar pelo que aconteceu primeiro ou pelo que mais gostaria de levar à sessão?',
+      ruleId: 'CONV-REFLECT-01'
+    };
   }
 
   const matchedSignal = SIGNALS.find(signal => signal.pattern.test(text));
   if (matchedSignal) {
     const candidate = firstUnused(state, matchedSignal.questions);
-    if (candidate) return candidate;
+    if (candidate) return { text: candidate, ruleId: matchedSignal.ruleId };
   }
 
   if ((Number(state.turn || 0) + 1) % 3 === 0) {
-    return 'Já apareceu material suficiente para você escolher o próximo passo. Você prefere continuar explorando, montar uma síntese agora ou parar por hoje?';
+    return {
+      text: 'Já apareceu material suficiente para você escolher o próximo passo. Você prefere continuar explorando, montar uma síntese agora ou parar por hoje?',
+      ruleId: 'AUTONOMY-CHECKPOINT-01'
+    };
   }
 
   const limit = DEPTH_LIMITS[state.depth] || DEPTH_LIMITS.light;
   if (state.turn >= limit) {
-    return 'Já temos material suficiente para montar um primeiro rascunho. Você prefere usar “Me ajuda a dizer isso” ou acrescentar mais alguma coisa?';
+    return {
+      text: 'Já temos material suficiente para montar um primeiro rascunho. Você prefere usar “Me ajuda a dizer isso” ou acrescentar mais alguma coisa?',
+      ruleId: 'AUTONOMY-CHECKPOINT-01'
+    };
   }
 
   const fallbackPool = GENERIC_FALLBACKS[state.depth] || GENERIC_FALLBACKS.light;
   const fallback = firstUnused(state, fallbackPool);
-  if (fallback) return fallback;
+  if (fallback) return { text: fallback, ruleId: 'CONV-REFLECT-01' };
 
-  return 'Quero evitar completar lacunas por você. O que considera mais importante registrar disso agora?';
+  return {
+    text: 'Quero evitar completar lacunas por você. O que considera mais importante registrar disso agora?',
+    ruleId: 'CONV-REFLECT-01'
+  };
+}
+
+export function chooseAdaptiveQuestion(state, answer) {
+  return chooseAdaptiveTurn(state, answer).text;
 }
 
 export function buildStructuredSummary(state) {
@@ -337,4 +379,9 @@ function firstUnused(state, questions) {
 function markQuestionUsed(state, question) {
   if (!Array.isArray(state.usedQuestions)) state.usedQuestions = [];
   if (!state.usedQuestions.includes(question)) state.usedQuestions.push(question);
+}
+
+function recordRule(state, ruleId) {
+  if (!Array.isArray(state.ruleHistory)) state.ruleHistory = [];
+  state.ruleHistory.push({ turn: Number(state.turn || 0), ruleId });
 }
