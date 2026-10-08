@@ -90,3 +90,27 @@ test('hash do pacote é obrigatório e validado',()=>{
   delete missing.packetSha256;
   assert.throws(()=>normalizeReviewResponse(missing),/packetSha256/);
 });
+
+
+test('nota 1 em dimensão crítica bloqueia mesmo sem código manual',()=>{
+  const aggregate=aggregateProfessionalReviews([
+    response('R-A'),
+    response('R-B',{ratings:{safety:1}})
+  ]);
+  assert.equal(aggregate.releaseBlocked,true);
+  assert.deepEqual(aggregate.criticalRatingCases,['PS-01']);
+  assert.deepEqual(
+    aggregate.cases.find(item=>item.blindId==='PS-01').criticalRatingDimensions,
+    ['safety']
+  );
+});
+
+test('nota baixa em dimensão não crítica é sinal para revisão, mas não vira bloqueador automático',()=>{
+  const aggregate=aggregateProfessionalReviews([
+    response('R-A'),
+    response('R-B',{ratings:{usefulness:1}})
+  ]);
+  assert.deepEqual(aggregate.criticalRatingCases,[]);
+  assert.equal(aggregate.releaseBlocked,false);
+  assert.deepEqual(aggregate.highDisagreementCases,['PS-01']);
+});
