@@ -27,6 +27,14 @@ Primeira fundação técnica do MVP:
 - base de cenários de teste;
 - sem backend e sem envio automático de dados.
 
+## Teste público
+
+A versão pública de testes está disponível em:
+
+https://madeirareflo.github.io/Ombro-amigo/
+
+Os dados da conversa continuam armazenados somente no navegador do usuário; a publicação no GitHub Pages serve apenas os arquivos estáticos da aplicação.
+
 ## Rodar localmente
 
 Requer Node.js 20+.
@@ -41,6 +49,10 @@ Depois abra:
 ```
 http://localhost:4173
 ```
+
+## Base de evidências
+
+As decisões de comportamento conversacional e segurança são rastreadas em [`docs/EVIDENCE_BASE.md`](docs/EVIDENCE_BASE.md), com referências oficiais e literatura revisada por pares. Essa base orienta o design, mas não constitui validação clínica do produto.
 
 ## Testes
 
