@@ -173,3 +173,47 @@ test('fluxo real do app grava o relato somente no IndexedDB cifrado',async({page
   await expect(page.locator('#resume-panel')).not.toHaveClass(/hidden/);
   await expect(page.locator('#resume-info')).toContainText('persistida cifrada neste navegador');
 });
+
+
+test('perda da chave preserva ciphertext e bloqueia sobrescrita até exclusão explícita',async({page})=>{
+  await openHarness(page);
+
+  await page.evaluate(()=>window.storageHarness.saveConversationState({
+    session:{mode:'session',entries:[{text:'estado cifrado original'}]},
+    view:'conversation'
+  }));
+  const before=await page.evaluate(()=>window.storageHarness.inspectDb());
+  const serializedBefore=JSON.stringify(before.primary);
+  expect(before.key.exists).toBe(true);
+
+  await page.evaluate(()=>window.storageHarness.deleteKeyOnly());
+  await page.reload();
+  await page.waitForFunction(()=>window.__storageHarnessReady===true);
+
+  const status=await page.evaluate(()=>window.storageHarness.initializeConversationStorage());
+  expect(status.mode).toBe('locked-indexeddb');
+  expect(status.hasUnreadableData).toBe(true);
+  expect(status.persistenceConfirmed).toBe(false);
+  expect(status.error).toBe('missing-encryption-key');
+
+  await page.evaluate(()=>window.storageHarness.saveConversationState({
+    session:{mode:'session',entries:[{text:'novo estado somente em memória'}]},
+    view:'conversation'
+  }));
+  const loaded=await page.evaluate(()=>window.storageHarness.loadConversationState());
+  expect(loaded.session.entries[0].text).toBe('novo estado somente em memória');
+
+  const locked=await page.evaluate(()=>window.storageHarness.inspectDb());
+  expect(locked.key.exists).toBe(false);
+  expect(JSON.stringify(locked.primary)).toBe(serializedBefore);
+
+  await page.evaluate(()=>window.storageHarness.clearAllSensitiveState());
+  await page.evaluate(()=>window.storageHarness.saveConversationState({
+    session:{mode:'session',entries:[{text:'novo estado após reset explícito'}]},
+    view:'conversation'
+  }));
+  const reset=await page.evaluate(()=>window.storageHarness.inspectDb());
+  expect(reset.key.exists).toBe(true);
+  expect(reset.primary).toBeTruthy();
+  expect(JSON.stringify(reset.primary)).not.toBe(serializedBefore);
+});

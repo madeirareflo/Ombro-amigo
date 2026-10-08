@@ -176,3 +176,32 @@ test('falha de gravação mantém a versão mais recente em memória sem regredi
   assert.equal(status.savedAt,'2026-10-08T12:01:00.000Z');
   assert.equal(status.error,'Error');
 });
+
+
+test('backend bloqueado com dados ilegíveis permite exclusão explícita sem sobrescrever',async()=>{
+  let deleted=false;
+  const backend={
+    mode:'locked-indexeddb',
+    persistent:false,
+    encrypted:true,
+    initialError:'missing-encryption-key',
+    hasUnreadableData:true,
+    deleteAllSensitive:async()=>{ deleted=true; },
+    close:()=>{}
+  };
+  const store=createConversationStorage({backendFactory:async()=>backend,legacyStorage:fakeStorage()});
+
+  const status=await store.initializeConversationStorage();
+  assert.equal(status.mode,'locked-indexeddb');
+  assert.equal(status.hasUnreadableData,true);
+  assert.equal(status.error,'missing-encryption-key');
+  assert.equal(status.keyStrategy,'missing-local-key');
+
+  await store.saveConversationState({session:{entries:[{text:'fica só em memória'}]}});
+  const loaded=await store.loadConversationState();
+  assert.equal(loaded.session.entries[0].text,'fica só em memória');
+  assert.equal((await store.getConversationStorageStatus()).persistenceConfirmed,false);
+
+  await store.clearAllSensitiveState();
+  assert.equal(deleted,true);
+});

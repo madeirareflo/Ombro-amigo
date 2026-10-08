@@ -77,6 +77,14 @@ async function corruptPrimary(){
   db.close();
 }
 
+async function deleteKeyOnly(){
+  const db=await openDb();
+  const tx=db.transaction(KEY_STORE,'readwrite');
+  tx.objectStore(KEY_STORE).delete(KEY_ID);
+  await transactionDone(tx);
+  db.close();
+}
+
 window.storageHarness={
   initializeConversationStorage,
   saveConversationState,
@@ -85,6 +93,7 @@ window.storageHarness={
   getConversationStorageStatus,
   inspectDb,
   corruptPrimary,
+  deleteKeyOnly,
   seedLegacy(value){
     localStorage.setItem('ombro-amigo.local-state.v2',JSON.stringify(value));
   },

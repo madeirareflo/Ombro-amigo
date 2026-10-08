@@ -244,7 +244,9 @@ async function refreshLocalDataStatus(){
   const acknowledgement=loadAcknowledgement();
   const storageDescription=status.mode==='encrypted-indexeddb'
     ? 'Armazenamento da conversa: cifrado localmente no navegador'
-    : 'Armazenamento da conversa: somente na memória desta aba';
+    : status.mode==='locked-indexeddb'
+      ? 'Armazenamento anterior: cifrado, mas sem a chave local necessária para abrir'
+      : 'Armazenamento da conversa: somente na memória desta aba';
 
   const parts=[
     status.hasConversation
@@ -260,7 +262,10 @@ async function refreshLocalDataStatus(){
   if(status.legacyPlaintextPresent){
     parts.push('Existe uma conversa antiga em texto local aguardando migração segura');
   }
-  if(status.error && status.error!=='recovered-from-backup'){
+  if(status.hasUnreadableData){
+    parts.push('Os dados cifrados anteriores foram preservados e não serão sobrescritos. Novas alterações ficam apenas em memória até você apagar os dados inacessíveis e começar de novo');
+  }
+  if(status.error && !['recovered-from-backup','missing-encryption-key'].includes(status.error)){
     parts.push('O navegador relatou uma falha de persistência; confira antes de fechar esta página');
   }
 

@@ -77,6 +77,8 @@ Cada nova gravação move o registro cifrado anterior para um slot de backup na 
 
 Isso **não** é backup independente: perda/corrupção da chave torna principal e backup ilegíveis. Nesta fase não existe recuperação remota da chave. O produto deve informar a limitação em vez de prometer recuperação impossível.
 
+Se o navegador ainda contiver ciphertext, mas a chave local tiver desaparecido, o app entra em modo bloqueado: preserva os registros cifrados, não cria silenciosamente uma nova chave e não grava por cima deles. Novas alterações ficam somente em memória. A pessoa pode apagar explicitamente os dados inacessíveis para reiniciar com uma nova chave. Essa escolha evita transformar uma perda parcial de chave em sobrescrita destrutiva automática.
+
 ## Exclusão
 
 “Apagar conversa” remove registro atual, backup e chave de dados em uma transação. A confirmação 18+ permanece separada, exceto quando a pessoa escolhe apagar todos os dados do aplicativo.
@@ -90,6 +92,7 @@ A remoção lógica do navegador não é uma garantia de sanitização forense d
 - a chave é não extraível;
 - adulteração do ciphertext falha na autenticação;
 - uma cópia anterior cifrada pode recuperar corrupção isolada do registro atual;
+- ausência de chave diante de ciphertext existente bloqueia sobrescrita automática;
 - apagar a conversa remove ciphertext atual, backup e chave;
 - migração só apaga o legado depois de persistência cifrada bem-sucedida;
 - falha de APIs seguras degrada para memória, nunca para nova persistência sensível em texto claro.
