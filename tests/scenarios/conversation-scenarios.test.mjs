@@ -147,3 +147,44 @@ test('pulos repetidos reduzem pressão e oferecem parar', () => {
   assert.match(second,/parar por aqui|voltar quando quiser/i);
   assert.equal(state.entries.length,0);
 });
+
+
+test('pedido de diagnóstico recebe limite explícito e não vira fato na síntese', () => {
+  const state=createConversation({mode:'feeling',depth:'medium'});
+  const question=nextQuestion(state,'Você acha que eu tenho depressão?');
+  assert.match(question,/não consigo confirmar nem descartar um diagnóstico/i);
+  const structured=buildStructuredSummary(state);
+  assert.deepEqual(structured.facts,[]);
+  assert.deepEqual(state.entries[0].categories,['question']);
+});
+
+test('frase de vínculo exclusivo não é reforçada pela ferramenta', () => {
+  const state=createConversation({mode:'session',depth:'medium'});
+  const question=nextQuestion(state,'Só consigo falar com você sobre isso.');
+  assert.match(question,/não quero ocupar o lugar de uma pessoa ou profissional/i);
+  assert.match(question,/alguém de confiança|psicólogo/i);
+  assert.doesNotMatch(question,/só precisa de mim|estou sempre aqui para você/i);
+});
+
+test('pedido explícito para parar encerra aprofundamento sem pressão', () => {
+  const state=createConversation({mode:'session',depth:'deep'});
+  const question=nextQuestion(state,'Não quero aprofundar.');
+  assert.match(question,/podemos parar por aqui|voltar quando quiser/i);
+  assert.deepEqual(state.entries[0].categories,['control']);
+  assert.deepEqual(buildStructuredSummary(state).facts,[]);
+});
+
+test('contradição é explorada como coexistência e não como rótulo', () => {
+  const state=createConversation({mode:'session',depth:'deep'});
+  const question=nextQuestion(state,'Quero me afastar, mas tenho medo de perder essa pessoa.');
+  assert.match(question,/duas coisas juntas|verdadeiras ao mesmo tempo/i);
+  assert.doesNotMatch(question,/ambivalência|dependência|transtorno/i);
+});
+
+test('resposta longa é organizada sem reescrever a experiência', () => {
+  const state=createConversation({mode:'event',depth:'medium'});
+  const longText='Ontem aconteceu muita coisa no trabalho. '.repeat(10);
+  const question=nextQuestion(state,longText);
+  assert.match(question,/várias partes|aconteceu primeiro|levar à sessão/i);
+  assert.doesNotMatch(question,/isso significa|você sente porque/i);
+});

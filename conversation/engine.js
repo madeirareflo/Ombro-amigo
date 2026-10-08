@@ -28,6 +28,29 @@ const GENERIC_FALLBACKS = {
   ]
 };
 
+const BOUNDARY_RULES = [
+  {
+    key: 'diagnosisRequest',
+    pattern: /\b(você acha que eu tenho|vc acha que eu tenho|será que eu tenho|sera que eu tenho|isso significa que eu tenho)\b/i,
+    response: 'Eu não consigo confirmar nem descartar um diagnóstico. Posso ajudar a organizar o que você percebeu para levar ao profissional. Qual sinal ou situação você gostaria de contar primeiro?'
+  },
+  {
+    key: 'dependency',
+    pattern: /(só consigo falar com você|so consigo falar com voce|prefiro falar com você|prefiro falar com voce|você é a única pessoa|voce e a unica pessoa|só você me entende|so voce me entende)/i,
+    response: 'Posso ajudar a preparar o que você quer dizer, mas não quero ocupar o lugar de uma pessoa ou profissional. O que você gostaria de conseguir levar desta conversa para alguém de confiança ou para seu psicólogo?'
+  },
+  {
+    key: 'stop',
+    pattern: /\b(não quero aprofundar|nao quero aprofundar|quero parar|prefiro parar|chega por hoje)\b/i,
+    response: 'Tudo bem. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
+  },
+  {
+    key: 'contradiction',
+    pattern: /(?=.*\b(quero terminar|quero me afastar)\b)(?=.*\b(medo de perder|medo de ficar sem)\b)/i,
+    response: 'Você colocou duas coisas juntas: querer se afastar e ter medo de perder essa pessoa. As duas parecem verdadeiras ao mesmo tempo para você?'
+  }
+];
+
 const SIGNALS = [
   {
     key: 'uncertainty',
@@ -110,6 +133,7 @@ export function openingQuestion(state) {
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
 
+  state.skips = 0;
   state.entries.push({
     kind: 'user_statement',
     text,
@@ -149,6 +173,14 @@ export function skipQuestion(state) {
 
 export function chooseAdaptiveQuestion(state, answer) {
   const text = String(answer || '').trim();
+
+  const boundary = matchBoundaryRule(text);
+  if (boundary) return boundary.response;
+
+  if (text.length >= 280) {
+    return 'Você trouxe várias partes de uma vez. Para não reorganizar por você: prefere começar pelo que aconteceu primeiro ou pelo que mais gostaria de levar à sessão?';
+  }
+
   const matchedSignal = SIGNALS.find(signal => signal.pattern.test(text));
 
   if (matchedSignal) {
@@ -222,6 +254,11 @@ export function buildSummary(state) {
 function classifyDeclaredContent(text) {
   const categories = [];
   const value = String(text || '');
+  const boundary = matchBoundaryRule(value);
+
+  if (boundary?.key === 'diagnosisRequest') return ['question'];
+  if (boundary?.key === 'stop') return ['control'];
+  if (boundary?.key === 'dependency') return ['difficulty'];
 
   if (/\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)\b/i.test(value)) {
     categories.push('emotion');
@@ -237,6 +274,10 @@ function classifyDeclaredContent(text) {
 
   if (!categories.length) categories.push('fact');
   return categories;
+}
+
+function matchBoundaryRule(text) {
+  return BOUNDARY_RULES.find(rule => rule.pattern.test(String(text || ''))) || null;
 }
 
 function section(title, items) {
