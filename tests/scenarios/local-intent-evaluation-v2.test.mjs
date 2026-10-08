@@ -88,6 +88,8 @@ test('independent protected negatives are measured as false actions, not ignored
   assert.equal(metrics.accepted, 2);
   assert.equal(metrics.acceptedCorrect, 1);
   assert.equal(metrics.protectedFalseActivations, 1);
+  assert.ok(metrics.releaseBlockers.includes('protected-class-false-action'));
+  assert.ok(metrics.releaseBlockers.includes('insufficient-safe-intent-coverage'));
   assert.equal(metrics.abstentions, 2);
   assert.equal(metrics.acceptedPrecision, 0.5);
   assert.equal(metrics.safeCoverage, 0.5);
