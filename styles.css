@@ -63,3 +63,12 @@ button.danger { color:#8a3434; border-color:#d8aaaa; }
 @media (max-width:560px) {
   .privacy-grid { grid-template-columns:1fr; }
 }
+
+.urgent-link { margin-top:.6rem; width:100%; }
+.urgent-inline { flex-basis:100%; color:#7d3434; border-color:#ddb6b6; }
+.safety-card { border-color:#ddb6b6; }
+.safety-card h2 { color:#7d3434; }
+.safety-resources { display:grid; gap:.65rem; margin:1rem 0; }
+.safety-resource { display:flex; justify-content:space-between; gap:1rem; align-items:center; padding:.85rem 1rem; border:1px solid #e1c2c2; border-radius:14px; background:#fffafa; }
+.safety-resource span { color:var(--muted); }
+.safety-resource strong { white-space:nowrap; }

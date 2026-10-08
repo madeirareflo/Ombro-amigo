@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#315c56">
   <meta name="description" content="Ombro-amigo: apoio à organização do que você quer levar para a psicoterapia.">
+  <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
@@ -54,6 +55,7 @@
       </details>
 
       <button id="privacy-link" class="privacy-link ghost" type="button">Como seus dados ficam privados?</button>
+      <button class="urgent-link ghost" type="button" data-urgent-help>Preciso de ajuda urgente</button>
     </section>
 
     <section id="conversation-view" class="card hidden" aria-live="polite">
@@ -68,6 +70,7 @@
         <div class="actions">
           <button type="submit">Continuar</button>
           <button type="button" id="say-this" class="secondary">Me ajuda a dizer isso</button>
+          <button type="button" class="ghost urgent-inline" data-urgent-help>Preciso de ajuda urgente</button>
         </div>
       </form>
     </section>
@@ -83,6 +86,15 @@
       </div>
       <p class="muted small">Nada é enviado para outra pessoa nesta versão.</p>
     </section>
+    <section id="safety-view" class="card safety-card hidden" aria-labelledby="safety-title" role="alert">
+      <p class="eyebrow">Ajuda humana</p>
+      <h2 id="safety-title">Esta ferramenta não atende crises</h2>
+      <p id="safety-message"></p>
+      <div id="safety-resources" class="safety-resources"></div>
+      <p class="muted small">Ombro-amigo não faz avaliação de risco, não substitui atendimento profissional e não entra em contato com serviços por você.</p>
+      <button id="safety-back" type="button">Voltar</button>
+    </section>
+
     <section id="privacy-view" class="card hidden" aria-labelledby="privacy-title">
       <div class="conversation-header">
         <button id="privacy-back" class="ghost" type="button">← Voltar</button>

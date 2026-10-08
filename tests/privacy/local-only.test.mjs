@@ -21,3 +21,20 @@ test('não há scripts externos na página principal', async () => {
   assert.ok(srcs.length>0);
   assert.ok(srcs.every(src=>src.startsWith('./') || src.startsWith('/')));
 });
+
+
+test('página não envia referrer ao navegar para fora', async () => {
+  const html=await readFile('index.html','utf8');
+  assert.match(html,/name="referrer" content="no-referrer"/);
+});
+
+test('recursos carregados pela página principal são locais', async () => {
+  const html=await readFile('index.html','utf8');
+  const refs=[
+    ...[...html.matchAll(/<script[^>]+src=["']([^"']+)["']/g)].map(match=>match[1]),
+    ...[...html.matchAll(/<link[^>]+href=["']([^"']+)["']/g)].map(match=>match[1]),
+    ...[...html.matchAll(/<img[^>]+src=["']([^"']+)["']/g)].map(match=>match[1])
+  ];
+  assert.ok(refs.length>0);
+  assert.ok(refs.every(ref=>ref.startsWith('./') || ref.startsWith('/')));
+});
