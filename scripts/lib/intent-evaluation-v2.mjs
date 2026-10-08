@@ -43,6 +43,31 @@ export function partitionByFamily(rows) {
   };
 }
 
+// Balanced truncation avoids selecting only the first labels when a lab run
+// is capped for CPU/RAM. Stable order: no random seed or hidden sampling.
+export function selectBalancedEvaluation(rows, limit) {
+  if (!Number.isSafeInteger(limit) || limit < 1) throw new Error('invalid-evaluation-limit');
+  const byLabel = new Map(INTENT_LABELS.map(label => [
+    label, rows.filter(row => row.label === label)
+  ]));
+  const selected = [];
+  let offset = 0;
+  while (selected.length < limit) {
+    let progressed = false;
+    for (const label of INTENT_LABELS) {
+      const item = byLabel.get(label)?.[offset];
+      if (item) {
+        selected.push(item);
+        progressed = true;
+        if (selected.length >= limit) break;
+      }
+    }
+    if (!progressed) break;
+    offset++;
+  }
+  return selected;
+}
+
 export function validateEvaluationFixtures(rows, trainingPhrases = []) {
   const ids = new Set();
   const unique = new Set();
