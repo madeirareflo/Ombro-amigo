@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createReviewMaterials, reviewPacketMarkdown, simulateReviewCase } from '../../review/packet.js';
+import { buildReviewMetadata, normalizeSourceSha, sha256Text } from '../../review/reproducibility.js';
 
 const definitions=JSON.parse(await readFile(new URL('./cases.json',import.meta.url),'utf8'));
 
@@ -68,4 +69,38 @@ test('markdown de revisão contém campos de nota mas não o gabarito',()=>{
   assert.match(markdown,/Fidelidade \(1–5\)/);
   assert.match(markdown,/Evento bloqueador/);
   assert.doesNotMatch(markdown,/ruleId|sourceId|RV-00/);
+});
+
+
+test('metadata fixa SHA da versão e hashes do material gerado',()=>{
+  const {packet,key}=createReviewMaterials(definitions,{seed:'traceable'});
+  const packetMarkdown=reviewPacketMarkdown(packet);
+  const keyJson=JSON.stringify(key,null,2);
+  const casesRaw=JSON.stringify(definitions);
+  const metadata=buildReviewMetadata({
+    version:packet.version,
+    seed:'traceable',
+    cases:packet.cases.length,
+    sourceSha:'a35a81f9e277ac4e323b03816c015a4d891bfcb5',
+    casesRaw,
+    packetMarkdown,
+    keyJson,
+    generatedAt:'2026-10-08T18:00:00.000Z'
+  });
+
+  assert.equal(metadata.sourceSha,'a35a81f9e277ac4e323b03816c015a4d891bfcb5');
+  assert.equal(metadata.casesSha256,sha256Text(casesRaw));
+  assert.equal(metadata.packetSha256,sha256Text(packetMarkdown));
+  assert.equal(metadata.keySha256,sha256Text(keyJson));
+  assert.equal(metadata.generatedAt,'2026-10-08T18:00:00.000Z');
+});
+
+test('SHA de origem inválido é rejeitado em vez de produzir rodada não rastreável',()=>{
+  assert.equal(normalizeSourceSha('ABCDEF1'),'abcdef1');
+  assert.throws(()=>normalizeSourceSha('main'));
+  assert.throws(()=>normalizeSourceSha(''));
+});
+
+test('hash muda quando o material muda',()=>{
+  assert.notEqual(sha256Text('pacote A'),sha256Text('pacote B'));
 });

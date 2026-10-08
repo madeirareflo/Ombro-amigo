@@ -23,9 +23,13 @@ A pasta gerada contém:
 
 - `review-packet.md`: entregar ao revisor;
 - `review-key.json`: manter fechado até as notas estarem concluídas;
-- `review-metadata.json`: seed, quantidade de casos e horário de geração.
+- `review-metadata.json`: seed, quantidade de casos, SHA da versão, hashes SHA-256 dos casos/pacote/chave e horário de geração.
 
 Use seeds diferentes para as duas rodadas recomendadas pelo protocolo. O seed serve apenas para embaralhamento reproduzível; não é mecanismo criptográfico.
+
+O gerador resolve automaticamente `git rev-parse HEAD`. Se o material for gerado fora de um checkout Git, informe explicitamente `--sha=<commit>`. O comando falha se não houver um SHA válido: uma rodada sem versão congelada não é considerada rastreável.
+
+Os hashes SHA-256 servem para conferir que os arquivos entregues e a chave técnica não mudaram depois da geração. Eles não protegem o material contra uma pessoa que possa substituir simultaneamente arquivo e metadata.
 
 ## Regras de uso
 
