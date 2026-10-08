@@ -15,6 +15,7 @@ function response(reviewerId,blockers=[]){
     reviewerId,
     roundId:'round-1',
     sourceSha:'e9aa363da46cd7b866e767d8457804f2a8e58225',
+    packetSha256:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     cases:[
       {blindId:'PS-01',ratings,blockers},
       {blindId:'PS-02',ratings,blockers:[]}
@@ -45,6 +46,8 @@ test('CLI consolida arquivos independentes e preserva bloqueadores',async()=>{
     assert.equal(aggregate.releaseBlocked,true);
     assert.deepEqual(aggregate.blockerCodes,['INVENTED_SUMMARY_CONTENT']);
     assert.equal(aggregate.sourceSha,'e9aa363da46cd7b866e767d8457804f2a8e58225');
+    assert.equal(aggregate.roundId,'round-1');
+    assert.equal(aggregate.packetSha256,'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
   }finally{
     await rm(dir,{recursive:true,force:true});
   }

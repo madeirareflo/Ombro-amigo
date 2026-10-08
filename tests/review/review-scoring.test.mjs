@@ -12,6 +12,7 @@ function response(reviewerId,overrides={}){
     reviewerId,
     roundId:'round-1',
     sourceSha:'e20cfe3bb5cd2971ccb3efbc501735cd58cda8c2',
+    packetSha256:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     cases:[
       {blindId:'PS-01',ratings:{...ratings,...overrides.ratings},blockers:overrides.blockers || []},
       {blindId:'PS-02',ratings,blockers:[]}
@@ -65,4 +66,27 @@ test('respostas de versões diferentes não podem ser combinadas',()=>{
 test('códigos de bloqueio desconhecidos e ratings fora de 1–5 são rejeitados',()=>{
   assert.throws(()=>normalizeReviewResponse(response('R-A',{blockers:['UNKNOWN']})));
   assert.throws(()=>normalizeReviewResponse(response('R-A',{ratings:{safety:6}})));
+});
+
+
+test('rodadas ou pacotes cegos diferentes não podem ser agregados',()=>{
+  const differentRound=response('R-B');
+  differentRound.roundId='round-2';
+  assert.throws(
+    ()=>aggregateProfessionalReviews([response('R-A'),differentRound]),
+    /different round IDs/
+  );
+
+  const differentPacket=response('R-B');
+  differentPacket.packetSha256='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  assert.throws(
+    ()=>aggregateProfessionalReviews([response('R-A'),differentPacket]),
+    /different packet hashes/
+  );
+});
+
+test('hash do pacote é obrigatório e validado',()=>{
+  const missing=response('R-A');
+  delete missing.packetSha256;
+  assert.throws(()=>normalizeReviewResponse(missing),/packetSha256/);
 });

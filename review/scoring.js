@@ -50,6 +50,12 @@ function blindId(value){
   return id;
 }
 
+function packetHash(value){
+  const hash=String(value || '').trim().toLowerCase();
+  if(!/^[0-9a-f]{64}$/.test(hash)) throw new Error('packetSha256 must be a 64-character SHA-256 hex digest');
+  return hash;
+}
+
 function blockers(values=[]){
   if(!Array.isArray(values)) throw new Error('blockers must be an array');
   const result=[...new Set(values.map(value=>String(value || '').trim()).filter(Boolean))];
@@ -86,6 +92,7 @@ export function normalizeReviewResponse(response){
     reviewerId:reviewerId(response.reviewerId),
     roundId:String(response.roundId || '').trim() || 'round-1',
     sourceSha:sourceSha(response.sourceSha),
+    packetSha256:packetHash(response.packetSha256),
     cases
   };
 }
@@ -103,6 +110,16 @@ export function aggregateProfessionalReviews(responses){
   const source=normalized[0].sourceSha;
   if(normalized.some(response=>response.sourceSha!==source)){
     throw new Error('review responses refer to different source SHAs');
+  }
+
+  const roundId=normalized[0].roundId;
+  if(normalized.some(response=>response.roundId!==roundId)){
+    throw new Error('review responses refer to different round IDs');
+  }
+
+  const packetSha256=normalized[0].packetSha256;
+  if(normalized.some(response=>response.packetSha256!==packetSha256)){
+    throw new Error('review responses refer to different packet hashes');
   }
 
   const reviewerIds=new Set(normalized.map(response=>response.reviewerId));
@@ -142,6 +159,8 @@ export function aggregateProfessionalReviews(responses){
   return {
     version:1,
     sourceSha:source,
+    roundId,
+    packetSha256,
     reviewerCount:normalized.length,
     caseCount:cases.length,
     releaseBlocked:blockerCodes.length>0 || incompleteCases.length>0,

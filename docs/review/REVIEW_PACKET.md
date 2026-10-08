@@ -73,3 +73,15 @@ node scripts/aggregate-review-responses.mjs --out=review-aggregate.json reviewer
 ```
 
 O comando rejeita rodada com menos de dois revisores, versões de código diferentes, ratings inválidos ou códigos bloqueadores desconhecidos. O resultado mantém `releaseBlocked=true` sempre que houver bloqueador ou caso incompleto; notas altas não anulam esse estado.
+
+
+### Vincular respostas ao mesmo pacote
+
+Cada arquivo de resposta precisa registrar, além do SHA do código e do `roundId`, o `packetSha256` publicado em `review-metadata.json`.
+
+A consolidação rejeita respostas que tenham:
+- SHA de código diferente;
+- `roundId` diferente;
+- hash de pacote diferente.
+
+Isso evita combinar por engano notas dadas para ordens cegas distintas, nas quais o mesmo `PS-01` poderia representar casos diferentes.
