@@ -1,0 +1,12 @@
+{
+  "name": "ombro-amigo-onnx-lab",
+  "private": true,
+  "type": "module",
+  "description": "Isolated optional offline research lab; never bundled into the PWA",
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1"
+  },
+  "scripts": {
+    "benchmark": "node ./bench-local-onnx.mjs"
+  }
+}
