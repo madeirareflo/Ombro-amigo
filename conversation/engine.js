@@ -58,7 +58,7 @@ const BOUNDARY_RULES = [
   {
     key: 'stop',
     ruleId: 'AUTONOMY-SKIP-01',
-    pattern: /\b(não quero aprofundar|nao quero aprofundar|quero parar|prefiro parar|chega por hoje|não quero continuar|nao quero continuar)\b/i,
+    pattern: /\b(não quero aprofundar|nao quero aprofundar|quero parar|prefiro parar|chega por hoje|não quero continuar|nao quero continuar|não quero mais falar|nao quero mais falar|quero encerrar|por hoje é só|por hoje e so)\b/i,
     response: 'Tudo bem. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
   },
   {
@@ -70,23 +70,23 @@ const BOUNDARY_RULES = [
 ];
 
 const SENSITIVE_TOPIC_PATTERN = /\b(abuso|abusado|abusada|violência|violencia|estupro|agressão|agressao|assédio|assedio|luto|falecimento|morreu|morte|trauma|traumático|traumatica|traumática)\b/i;
-const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|difícil dizer|dificil dizer|não consigo explicar|nao consigo explicar|não sei o que sinto|nao sei o que sinto)[.!]?$/i;
+const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|não faço ideia|nao faco ideia|difícil dizer|dificil dizer|não consigo explicar|nao consigo explicar|não sei o que sinto|nao sei o que sinto)[.!?]*$/i;
 
 const CONTROL_INTENTS = [
   {
     key:'clarify',
     ruleId:'CONV-CLARIFY-01',
-    pattern:/^(como assim|não entendi|nao entendi|o que você quer dizer|o que voce quer dizer|pode explicar|explica melhor|não ficou claro|nao ficou claro)[?!.\s]*$/i
+    pattern:/^(como assim|não entendi|nao entendi|não entendi essa pergunta|nao entendi essa pergunta|o que você quer dizer|o que voce quer dizer|o que quer dizer com isso|pode explicar|pode reformular|explica melhor|explica de outro jeito|não saquei|nao saquei|não ficou claro|nao ficou claro)[?!.\s]*$/i
   },
   {
     key:'continue',
     ruleId:'AUTONOMY-CONTINUE-01',
-    pattern:/^(continuar|continuar explorando|quero continuar|vamos continuar|pode continuar|seguir|quero explorar mais)[?!.\s]*$/i
+    pattern:/^(continuar|continuar explorando|continua|quero continuar|vamos continuar|podemos continuar|pode continuar|seguir|quero seguir|quero explorar mais)[?!.\s]*$/i
   },
   {
     key:'summary',
     ruleId:'AUTONOMY-SUMMARY-01',
-    pattern:/^(me (?:ajuda|ajude) a dizer isso|me ajuda a falar disso|montar síntese|montar sintese|fazer síntese|fazer sintese|quero uma síntese|quero uma sintese|ir para a síntese|ir para a sintese)[?!.\s]*$/i
+    pattern:/^(me (?:ajuda|ajude) a dizer isso|me ajuda a falar disso|me ajuda a organizar isso|me ajuda a explicar pro psicólogo|me ajuda a explicar pro psicologo|montar síntese|montar sintese|fazer síntese|fazer sintese|faz um resumo|pode resumir|quero um resumo|quero uma síntese|quero uma sintese|ir para a síntese|ir para a sintese)[?!.\s]*$/i
   }
 ];
 
