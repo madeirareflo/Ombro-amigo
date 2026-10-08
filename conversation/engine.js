@@ -128,14 +128,14 @@ export function chooseAdaptiveQuestion(state, answer) {
     if (candidate) return candidate;
   }
 
-  const fallbackPool = GENERIC_FALLBACKS[state.depth] || GENERIC_FALLBACKS.light;
-  const fallback = firstUnused(state, fallbackPool);
-  if (fallback) return fallback;
-
   const limit = DEPTH_LIMITS[state.depth] || DEPTH_LIMITS.light;
   if (state.turn >= limit) {
     return 'Já temos material suficiente para montar um primeiro rascunho. Quer usar “Me ajuda a dizer isso” ou prefere acrescentar mais alguma coisa?';
   }
+
+  const fallbackPool = GENERIC_FALLBACKS[state.depth] || GENERIC_FALLBACKS.light;
+  const fallback = firstUnused(state, fallbackPool);
+  if (fallback) return fallback;
 
   return 'O que você considera mais importante registrar disso, sem precisar explicar tudo agora?';
 }
