@@ -140,3 +140,14 @@ test('colloquial uncertainty is not recorded as a claim', () => {
     });
   }
 });
+
+test('record-only mode preserves short literal notes rather than interpreting them as dialogue', () => {
+  for (const note of ['sim', 'não', 'isso', 'mais ou menos']) {
+    const state = createConversation({ mode: 'record', depth: 'light' });
+    openingQuestion(state);
+    const reply = nextQuestion(state, note);
+    assert.match(reply, /registrado/i);
+    assert.deepEqual(state.entries.map(item => item.text), [note]);
+    assert.equal(state.entries[0].source, 'declared');
+  }
+});
