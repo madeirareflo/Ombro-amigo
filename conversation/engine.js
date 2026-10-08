@@ -277,7 +277,7 @@ export function openingQuestion(state) {
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
   const controlIntent = detectConversationControlIntent(text);
-  const briefReply = controlIntent ? null : classifyBriefReply(state, text);
+  const briefReply = (controlIntent || state.mode === 'record') ? null : classifyBriefReply(state, text);
   const context = ensureConversationContext(state);
   if (briefReply === 'scope_all') context.answerScope = 'all';
   if (UNCERTAINTY_PATTERN.test(text)) context.uncertaintyStreak += 1;
