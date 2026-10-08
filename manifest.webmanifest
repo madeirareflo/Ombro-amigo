@@ -1,20 +1,20 @@
 {
   "id": "./",
-  "name": "Ombro-amigo",
+  "name": "Ombro-amigo — preparação para a sessão",
   "short_name": "Ombro",
-  "description": "Apoio à organização do que você quer levar para a psicoterapia.",
+  "description": "Ferramenta privada para organizar o que você quer levar para uma conversa em psicoterapia.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#eef3f0",
-  "theme_color": "#315c56",
+  "background_color": "#f4f7f5",
+  "theme_color": "#244e48",
   "lang": "pt-BR",
   "icons": [
     {
       "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }

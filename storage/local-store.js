@@ -13,7 +13,8 @@ export function saveLocalState(state, storage=browserStorage()) {
     savedAt:new Date().toISOString(),
     session:state?.session || null,
     view:state?.view || 'conversation',
-    summaryDraft:String(state?.summaryDraft || '')
+    summaryDraft:String(state?.summaryDraft || ''),
+    summaryModel:state?.summaryModel || null
   };
   storage.setItem(KEY,JSON.stringify(payload));
   return payload;
@@ -36,7 +37,8 @@ export function loadLocalState(storage=browserStorage()) {
       savedAt:null,
       session,
       view:'conversation',
-      summaryDraft:''
+      summaryDraft:'',
+      summaryModel:null
     };
   } catch {
     return null;
