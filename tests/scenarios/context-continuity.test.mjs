@@ -46,3 +46,51 @@ test('legacy saved states without context are upgraded in memory', () => {
   assert.deepEqual(state.entries, []);
   assert.ok(response.length > 0);
 });
+
+test('uncertainty responds without repeating the original scope question', () => {
+  const state = createConversation({ mode: 'feeling', depth: 'medium' });
+  openingQuestion(state);
+  const first = nextQuestion(state, 'Não sei');
+  assert.match(first, /não saber/i);
+  assert.doesNotMatch(first, /mais no corpo.*pensamentos.*relações/i);
+  const second = nextQuestion(state, 'Não sei');
+  assert.match(second, /tristeza|medo|raiva|vergonha|culpa|ansiedade/i);
+  const third = nextQuestion(state, 'Não sei');
+  assert.match(third, /não precisamos insistir|deixar esse ponto em aberto/i);
+  assert.deepEqual(buildStructuredSummary(state).facts, []);
+  assert.deepEqual(buildStructuredSummary(state).emotions, []);
+});
+
+test('same meaning expressed differently does not immediately repeat a question dimension', () => {
+  const state = createConversation({ mode: 'feeling', depth: 'medium' });
+  openingQuestion(state);
+  const first = nextQuestion(state, 'Tenho um aperto no peito.');
+  const second = nextQuestion(state, 'Também sinto o peito tenso.');
+  assert.match(first, /em que momento/i);
+  assert.match(second, /o que estava acontecendo ao redor/i);
+  assert.equal(state.context.askedDimensions.includes('timing'), true);
+  assert.equal(state.context.askedDimensions.includes('circumstances'), true);
+  assert.equal(state.context.questionHistory.length <= 12, true);
+});
+
+test('ambiguous shorthand is clarified without creating unsupported facts', () => {
+  const state = createConversation({ mode: 'feeling', depth: 'light' });
+  openingQuestion(state);
+  const first = nextQuestion(state, 'sim');
+  assert.match(first, /sem supor nada|deixar essa parte em aberto/i);
+  assert.equal(state.entries.length, 0);
+  const next = nextQuestion(state, 'mais ou menos');
+  assert.match(next, /sem forçar uma definição/i);
+  assert.equal(state.entries.length, 0);
+  assert.ok(state.transcript.some(item => item.role === 'user' && item.text === 'sim'));
+});
+
+test('older conversation with no context infers prior question dimension without rewriting transcript', () => {
+  const state = createConversation({ mode: 'feeling', depth: 'light' });
+  const opening = state.lastQuestion;
+  delete state.context;
+  nextQuestion(state, 'em tudo isso');
+  assert.equal(state.context.answerScope, 'all');
+  assert.equal(state.transcript[0].text, opening);
+  assert.deepEqual(state.entries, []);
+});
