@@ -278,6 +278,11 @@ export function createConversationStorage({
     await writeQueue;
     const target=await getBackend();
 
+    // Se a última gravação segura falhou, memoryState é a cópia mais recente
+    // desta sessão. Não devemos substituí-la silenciosamente por um registro
+    // cifrado anterior apenas porque ele ainda é legível.
+    if(memoryState) return memoryState;
+
     if(target.mode==='encrypted-indexeddb'){
       try{
         const value=await readEncryptedState(target);
@@ -289,7 +294,6 @@ export function createConversationStorage({
         lastError=error?.name || 'secure-load-failed';
       }
 
-      if(memoryState) return memoryState;
       const legacy=readLegacyConversationState(legacyStorage);
       if(legacy){
         memoryState=buildPayload(legacy,now,{preserveSavedAt:true});
@@ -298,7 +302,6 @@ export function createConversationStorage({
       return null;
     }
 
-    if(memoryState) return memoryState;
     const legacy=readLegacyConversationState(legacyStorage);
     if(legacy){
       memoryState=buildPayload(legacy,now,{preserveSavedAt:true});
@@ -347,7 +350,7 @@ export function createConversationStorage({
         const record=primary || backup;
         if(record?.encrypted){
           hasConversation=true;
-          savedAt=record.savedAt || savedAt;
+          if(!memoryState) savedAt=record.savedAt || savedAt;
           persistenceConfirmed=!memoryState;
         }
       }catch(error){
