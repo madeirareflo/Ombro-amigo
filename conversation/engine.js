@@ -39,7 +39,7 @@ const SIGNALS = [
   },
   {
     key: 'body',
-    pattern: /(corpo|coração|coracao|peito|respiração|respiracao|tremor|tenso|tensa|cansaço|cansaco|dor|sono|apetite)/i,
+    pattern: /\b(corpo|coração|coracao|peito|respiração|respiracao|tremor|tenso|tensa|cansaço|cansaco|dor|sono|apetite)\b/i,
     questions: [
       'Você percebe quando isso aparece no corpo com mais força?',
       'O que estava acontecendo ao redor quando você notou essa sensação no corpo?'
@@ -47,7 +47,7 @@ const SIGNALS = [
   },
   {
     key: 'thought',
-    pattern: /(pensei|pensando|pensamento|imagino|imaginei|acho que|minha cabeça|na minha cabeça)/i,
+    pattern: /\b(pensei|pensando|pensamento|imagino|imaginei|acho que|minha cabeça|na minha cabeça)\b/i,
     questions: [
       'Qual pensamento aparece com mais frequência quando isso acontece?',
       'Esse pensamento surge mais antes, durante ou depois da situação que você quer contar?'
@@ -55,7 +55,7 @@ const SIGNALS = [
   },
   {
     key: 'emotion',
-    pattern: /(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)/i,
+    pattern: /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)\b/i,
     questions: [
       'O que estava acontecendo quando você percebeu essa emoção?',
       'Essa palavra representa bem o que você sentiu ou só chega perto?'
@@ -63,7 +63,7 @@ const SIGNALS = [
   },
   {
     key: 'relationship',
-    pattern: /(namorado|namorada|marido|esposa|parceiro|parceira|mãe|mae|pai|irmão|irmao|irmã|irma|amigo|amiga|colega|família|familia|relacionamento)/i,
+    pattern: /\b(namorado|namorada|marido|esposa|parceiro|parceira|mãe|mae|pai|irmão|irmao|irmã|irma|amigo|amiga|colega|família|familia|relacionamento)\b/i,
     questions: [
       'Qual foi a parte dessa interação que ficou mais difícil de levar para a sessão?',
       'Tem alguma frase ou reação dessa pessoa que ficou especialmente marcada para você?'
@@ -71,7 +71,7 @@ const SIGNALS = [
   },
   {
     key: 'selfJudgment',
-    pattern: /(sou ridículo|sou ridicula|sou ridículo|sou idiota|sou horrível|sou horrivel|sou fraco|sou fraca|que vergonha de mim)/i,
+    pattern: /\b(sou ridículo|sou ridicula|sou ridículo|sou idiota|sou horrível|sou horrivel|sou fraco|sou fraca|que vergonha de mim)\b/i,
     questions: [
       'O que aconteceu para você acabar se descrevendo desse jeito?',
       'Se tirarmos o rótulo por um momento, qual fato ou situação você gostaria de conseguir contar?'
@@ -79,7 +79,7 @@ const SIGNALS = [
   },
   {
     key: 'avoidance',
-    pattern: /(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei)/i,
+    pattern: /\b(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei)\b/i,
     questions: [
       'O que parece mais difícil: começar o assunto, continuar depois de começar ou lidar com a reação da outra pessoa?',
       'Se você pudesse dizer só a primeira frase na sessão, o que gostaria que ela comunicasse?'
