@@ -19,7 +19,7 @@
     </div>
     <div class="status-stack">
       <span id="pwa-status" class="status-dot" aria-live="polite">Preparando modo offline…</span>
-      <button id="open-privacy" class="privacy-badge" type="button">Privado no aparelho</button>
+      <button id="open-privacy" class="privacy-badge" type="button">Dados no aparelho</button>
     </div>
   </header>
 
@@ -161,19 +161,21 @@
       </div>
       <p class="eyebrow">Seus dados</p>
       <h2 id="privacy-title">A conversa fica neste aparelho</h2>
-      <p class="lead">Sem conta, analytics, pixels ou sincronização. O site baixa os arquivos do aplicativo; seu texto não é enviado ao mantenedor.</p>
+      <p class="lead">Sem conta, analytics, pixels ou sincronização. O site baixa os arquivos do aplicativo; seu texto não é enviado ao mantenedor. Quando o navegador oferece suporte, conversa e síntese são cifradas localmente antes de serem persistidas.</p>
 
       <div class="privacy-grid">
-        <article><strong>Neste aparelho</strong><p>Conversa, histórico e rascunho da síntese.</p></article>
+        <article><strong>Neste aparelho</strong><p>Conversa, histórico e rascunho. Com IndexedDB e Web Crypto disponíveis, a persistência é cifrada; sem essas APIs, novas conversas ficam somente em memória.</p></article>
         <article><strong>Enviado automaticamente</strong><p>Nada do conteúdo da conversa.</p></article>
         <article><strong>Disponível ao psicólogo</strong><p>Nada automaticamente. Você decide se copia uma síntese.</p></article>
         <article><strong>Controle</strong><p>Você pode apagar os dados locais a qualquer momento.</p></article>
+        <article><strong>Limite da cifra local</strong><p>A chave fica no mesmo perfil do navegador. Isso reduz exposição em repouso, mas não protege contra acesso ao navegador desbloqueado ou código comprometido na mesma origem.</p></article>
       </div>
 
       <section class="local-data-panel" aria-labelledby="local-data-title">
         <strong id="local-data-title">Dados locais neste navegador</strong>
-        <p id="local-data-status" class="muted small"></p>
+        <p id="local-data-status" class="muted small" aria-live="polite"></p>
         <button id="persist-storage" class="secondary" type="button">Tentar manter dados mesmo com pouco espaço</button>
+        <p class="muted small">Essa opção ajuda contra remoção automática pelo navegador; não aumenta a proteção criptográfica.</p>
         <p id="persist-status" class="muted small"></p>
         <button id="delete-all-local" class="ghost danger" type="button">Apagar todos os dados locais</button>
       </section>

@@ -1,13 +1,17 @@
 import { createConversation, openingQuestion, nextQuestion, skipQuestion, buildStructuredSummary } from '../conversation/engine.js';
 import {
-  saveLocalState,
-  loadLocalState,
-  clearLocalState,
   saveAcknowledgement,
   loadAcknowledgement,
-  getLocalDataStatus,
-  clearAllLocalData
+  clearAcknowledgement
 } from '../storage/local-store.js';
+import {
+  initializeConversationStorage,
+  saveConversationState,
+  loadConversationState,
+  clearConversationState,
+  clearAllSensitiveState,
+  getConversationStorageStatus
+} from '../storage/secure-store.js';
 import { urgentHelpGuidance, detectExplicitImmediateDanger, assessSafety } from '../safety/policy.js';
 import { copyText } from './clipboard.js';
 import {
@@ -51,7 +55,7 @@ let summaryModel=null;
 function show(view){
   [onboardingView,home,conversationView,summaryView,privacyView,safetyView].forEach(node=>node.classList.add('hidden'));
   view.classList.remove('hidden');
-  if(view===privacyView) refreshLocalDataStatus();
+  if(view===privacyView) void refreshLocalDataStatus();
   currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':view===safetyView?'safety':view===onboardingView?'onboarding':'home';
   updateProgress();
 }
@@ -145,14 +149,14 @@ function renderSummaryEditor(){
         badge.textContent='Você editou';
         invalidateSummaryApproval();
         syncSummaryText();
-        persist('summary');
+        void persist('summary');
       });
       remove.addEventListener('click',()=>{
         summaryModel=removeSummaryItem(summaryModel,section.id,item.id);
         invalidateSummaryApproval();
         syncSummaryText();
         renderSummaryEditor();
-        persist('summary');
+        void persist('summary');
       });
       row.append(area,badge,remove);
       wrapper.appendChild(row);
@@ -167,7 +171,7 @@ function renderSummaryEditor(){
       invalidateSummaryApproval();
       syncSummaryText();
       renderSummaryEditor();
-      persist('summary');
+      void persist('summary');
       wrapper.querySelectorAll('textarea')[wrapper.querySelectorAll('textarea').length-1]?.select();
     });
     wrapper.appendChild(add);
@@ -182,15 +186,14 @@ function createOrRestoreSummary(savedModel=null){
   invalidateSummaryApproval();
 }
 
-function persist(view=currentView){
-  if(!session) return;
-  saveLocalState({
+async function persist(view=currentView){
+  if(!session) return null;
+  return saveConversationState({
     session,
     view,
     summaryDraft:summaryText.value,
     summaryModel
   });
-  refreshResumePanel();
 }
 
 function hasAcknowledgedTest(){
@@ -215,12 +218,12 @@ function start(mode){
   addMessage('ai',openingQuestion(session));
   summaryText.value='';
   invalidateSummaryApproval();
-  persist('conversation');
+  void persist('conversation');
   reply.focus();
 }
 
-function resumeSavedConversation(){
-  const saved=loadLocalState();
+async function resumeSavedConversation(){
+  const saved=await loadConversationState();
   if(!saved?.session) return;
   session=saved.session;
   depthLabel.textContent=depthName(session.depth);
@@ -236,24 +239,51 @@ function resumeSavedConversation(){
   }
 }
 
-function refreshLocalDataStatus(){
-  const status=getLocalDataStatus();
+async function refreshLocalDataStatus(){
+  const status=await getConversationStorageStatus();
+  const acknowledgement=loadAcknowledgement();
+  const storageDescription=status.mode==='encrypted-indexeddb'
+    ? 'Armazenamento da conversa: cifrado localmente no navegador'
+    : status.mode==='locked-indexeddb'
+      ? 'Armazenamento anterior: cifrado, mas sem a chave local necessária para abrir'
+      : 'Armazenamento da conversa: somente na memória desta aba';
+
   const parts=[
     status.hasConversation
-      ? 'Conversa salva: sim'+(status.savedAt?' · '+new Date(status.savedAt).toLocaleString('pt-BR'):'')
-      : 'Conversa salva: não',
-    status.hasAcknowledgement?'Aviso inicial confirmado: sim':'Aviso inicial confirmado: não'
+      ? 'Conversa disponível: sim'+(status.savedAt?' · '+new Date(status.savedAt).toLocaleString('pt-BR'):'')
+      : 'Conversa disponível: não',
+    storageDescription,
+    acknowledgement?'Aviso inicial confirmado: sim':'Aviso inicial confirmado: não'
   ];
+
+  if(status.recoveredFromBackup){
+    parts.push('A cópia anterior cifrada foi usada porque o registro atual não pôde ser lido');
+  }
+  if(status.legacyPlaintextPresent){
+    parts.push('Existe uma conversa antiga em texto local aguardando migração segura');
+  }
+  if(status.hasUnreadableData){
+    parts.push('Os dados cifrados anteriores foram preservados e não serão sobrescritos. Novas alterações ficam apenas em memória até você apagar os dados inacessíveis e começar de novo');
+  }
+  if(status.error && !['recovered-from-backup','missing-encryption-key'].includes(status.error)){
+    parts.push('O navegador relatou uma falha de persistência; confira antes de fechar esta página');
+  }
+
   localDataStatus.textContent=parts.join(' · ');
 }
 
-function refreshResumePanel(){
-  const saved=loadLocalState();
+async function refreshResumePanel(){
+  const saved=await loadConversationState();
   const hasConversation=Boolean(saved?.session?.entries?.length || saved?.session?.transcript?.length);
   resumePanel.classList.toggle('hidden',!hasConversation);
   if(!hasConversation) return;
-  const when=saved.savedAt?new Date(saved.savedAt).toLocaleString('pt-BR'):'salva anteriormente';
-  resumeInfo.textContent=depthName(saved.session.depth)+' · '+when+' · somente neste aparelho';
+
+  const status=await getConversationStorageStatus();
+  const when=saved.savedAt?new Date(saved.savedAt).toLocaleString('pt-BR'):'registrada nesta sessão';
+  const persistence=status.persistenceConfirmed
+    ? 'persistida cifrada neste navegador'
+    : 'somente nesta sessão; persistência não confirmada';
+  resumeInfo.textContent=depthName(saved.session.depth)+' · '+when+' · '+persistence;
 }
 
 function showUrgentHelp(messageOverride=null){
@@ -279,15 +309,21 @@ function showUrgentHelp(messageOverride=null){
   show(safetyView);
 }
 
-function forgetConversation(){
-  clearLocalState();
+async function forgetConversation(){
+  try{
+    await clearConversationState();
+  }catch{
+    alert('Não foi possível confirmar a exclusão dos dados locais. Tente novamente antes de considerar a conversa apagada.');
+    return false;
+  }
   session=null;
   summaryModel=null;
   summaryText.value='';
   invalidateSummaryApproval();
   messages.replaceChildren();
-  refreshResumePanel();
+  await refreshResumePanel();
   show(home);
+  return true;
 }
 
 function updatePwaStatus(){
@@ -320,7 +356,7 @@ replyForm.addEventListener('submit',event=>{
 
   const question=nextQuestion(session,text);
   addMessage('ai',question);
-  persist('conversation');
+  void persist('conversation');
   updateProgress();
 });
 
@@ -329,7 +365,7 @@ $('#skip-question').addEventListener('click',()=>{
   const question=skipQuestion(session);
   addMessage('user','Prefiro não responder a essa pergunta.');
   addMessage('ai',question);
-  persist('conversation');
+  void persist('conversation');
   updateProgress();
 });
 
@@ -337,13 +373,13 @@ $('#say-this').addEventListener('click',()=>{
   if(!session) return;
   createOrRestoreSummary();
   show(summaryView);
-  persist('summary');
+  void persist('summary');
 });
 
 $('#back-home').addEventListener('click',()=>{
-  persist('conversation');
+  void persist('conversation');
   show(home);
-  refreshResumePanel();
+  void refreshResumePanel();
 });
 
 $('#summary-back').addEventListener('click',()=>{
@@ -355,7 +391,7 @@ $('#accept-summary').addEventListener('click',()=>{
   summaryApproved=true;
   copyPanel.classList.remove('hidden');
   copyStatus.textContent='Confirmada neste aparelho. Nada foi enviado.';
-  persist('summary');
+  void persist('summary');
 });
 
 $('#reject-summary').addEventListener('click',()=>{
@@ -373,7 +409,7 @@ acknowledgeButton.addEventListener('click',()=>{
   if(!adultConfirm.checked) return;
   saveAcknowledgement();
   show(home);
-  refreshResumePanel();
+  void refreshResumePanel();
 });
 
 $('#onboarding-privacy').addEventListener('click',()=>show(privacyView));
@@ -383,9 +419,15 @@ $('#review-onboarding').addEventListener('click',()=>{
   show(onboardingView);
 });
 
-$('#delete-all-local').addEventListener('click',()=>{
+$('#delete-all-local').addEventListener('click',async()=>{
   if(!confirm('Apagar conversa, rascunho e confirmação deste teste neste navegador? Essa ação não pode ser desfeita.')) return;
-  clearAllLocalData();
+  try{
+    await clearAllSensitiveState();
+    clearAcknowledgement();
+  }catch{
+    localDataStatus.textContent='Não foi possível confirmar a exclusão completa. Tente novamente antes de considerar os dados apagados.';
+    return;
+  }
   session=null;
   summaryModel=null;
   summaryText.value='';
@@ -400,22 +442,22 @@ $('#open-privacy').addEventListener('click',()=>show(privacyView));
 $('#privacy-link').addEventListener('click',()=>show(privacyView));
 $('#privacy-back').addEventListener('click',()=>{
   show(landingView());
-  if(hasAcknowledgedTest()) refreshResumePanel();
+  if(hasAcknowledgedTest()) void refreshResumePanel();
 });
 document.querySelectorAll('[data-urgent-help]').forEach(button=>button.addEventListener('click',()=>showUrgentHelp()));
 $('#safety-back').addEventListener('click',()=>{
   if(session) show(conversationView);
   else{
     show(landingView());
-    if(hasAcknowledgedTest()) refreshResumePanel();
+    if(hasAcknowledgedTest()) void refreshResumePanel();
   }
 });
 
-$('#new-conversation').addEventListener('click',()=>{
-  if(confirm('Começar outra conversa e apagar a conversa salva neste aparelho?')) forgetConversation();
+$('#new-conversation').addEventListener('click',async()=>{
+  if(confirm('Começar outra conversa e apagar a conversa salva neste aparelho?')) await forgetConversation();
 });
-$('#delete-conversation').addEventListener('click',()=>{
-  if(confirm('Apagar a conversa salva neste aparelho? Essa ação não pode ser desfeita.')) forgetConversation();
+$('#delete-conversation').addEventListener('click',async()=>{
+  if(confirm('Apagar a conversa salva neste aparelho? Essa ação não pode ser desfeita.')) await forgetConversation();
 });
 
 $('#copy-summary').addEventListener('click',async()=>{
@@ -446,19 +488,23 @@ $('#persist-storage').addEventListener('click',async()=>{
 });
 
 window.addEventListener('pagehide',()=>{
-  if(currentView==='conversation'||currentView==='summary') persist(currentView);
+  if(currentView==='conversation'||currentView==='summary') void persist(currentView);
 });
 window.addEventListener('online',updatePwaStatus);
 window.addEventListener('offline',updatePwaStatus);
 
-if(hasAcknowledgedTest()){
-  show(home);
-  refreshResumePanel();
-}else{
-  show(onboardingView);
+async function bootstrap(){
+  await initializeConversationStorage();
+  if(hasAcknowledgedTest()){
+    show(home);
+    await refreshResumePanel();
+  }else{
+    show(onboardingView);
+  }
+  updatePwaStatus();
 }
 
-updatePwaStatus();
+void bootstrap();
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./service-worker.js')
     .then(()=>navigator.serviceWorker.ready)

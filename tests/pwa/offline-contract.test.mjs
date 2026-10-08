@@ -20,7 +20,7 @@ test('ícones declarados no manifesto existem no repositório', async () => {
   }
 });
 
-test('cache offline inclui os módulos essenciais e o ícone', async () => {
+test('cache offline inclui os módulos essenciais, inclusive armazenamento seguro', async () => {
   const sw=await readFile('service-worker.js','utf8');
   const escapeRegex=value=>value.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&');
   for(const asset of [
@@ -34,6 +34,8 @@ test('cache offline inclui os módulos essenciais e o ícone', async () => {
     './conversation/engine.js',
     './conversation/policy.js',
     './storage/local-store.js',
+    './storage/crypto.js',
+    './storage/secure-store.js',
     './safety/policy.js'
   ]) {
     assert.match(sw,new RegExp(escapeRegex(asset)));
