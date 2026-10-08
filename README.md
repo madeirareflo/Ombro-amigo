@@ -20,7 +20,7 @@ Primeira fundação técnica do MVP:
 
 - PWA instalável;
 - funcionamento local-first;
-- armazenamento local no dispositivo;
+- armazenamento local cifrado quando IndexedDB/Web Crypto estão disponíveis, com fallback somente em memória;
 - motor de conversa separado da interface;
 - regras de segurança separadas;
 - síntese revisável;
@@ -49,6 +49,10 @@ Depois abra:
 ```
 http://localhost:4173
 ```
+
+## Contrato de comportamento
+
+O motor de conversa é governado por [`docs/CONVERSATION_POLICY_V2.md`](docs/CONVERSATION_POLICY_V2.md), com IDs de regra, fontes, limitações e testes adversariais. O escopo está em [`docs/INTENDED_USE.md`](docs/INTENDED_USE.md) e a política de claims em [`docs/CLAIMS_POLICY.md`](docs/CLAIMS_POLICY.md).
 
 ## Base de evidências
 
@@ -79,11 +83,13 @@ service-worker.js     cache offline mínimo
 
 ## Privacidade no MVP
 
-Todo o conteúdo da conversa fica no navegador do próprio dispositivo usando armazenamento local. Não existe servidor, conta, sincronização, analytics, pixel de rastreamento ou painel do psicólogo nesta primeira versão.
+Todo o conteúdo da conversa fica no navegador do próprio dispositivo. Não existe servidor, conta, sincronização, analytics, pixel de rastreamento ou painel do psicólogo nesta primeira versão.
+
+Quando IndexedDB e Web Crypto estão disponíveis, conversa e síntese são persistidas como AES-GCM com uma `CryptoKey` não extraível do perfil local. Navegadores sem essas APIs degradam para memória: o app continua funcionando, mas não cria nova persistência sensível em texto claro.
 
 A página também declara uma Content Security Policy com `connect-src 'none'`, bloqueando conexões iniciadas pelo aplicativo via fetch/XHR/WebSocket. O GitHub Pages serve somente os arquivos estáticos do app; não há endpoint no projeto para receber o texto digitado.
 
-O usuário pode apagar o estado local a qualquer momento. Isso **não deve ser confundido com armazenamento criptografado de produção**: a criptografia local é uma etapa posterior.
+Essa cifra é defesa em profundidade, não uma promessa de sigilo contra o próprio navegador/origem: a chave fica no mesmo perfil e pode ser usada por código autorizado nessa origem. O modelo de ameaça, estratégia de chave, migração e limites estão em [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 
 ## Aviso
 

@@ -10,8 +10,12 @@ const files=[
   'service-worker.js',
   'app/main.js',
   'app/clipboard.js',
+  'app/summary-model.js',
   'conversation/engine.js',
+  'conversation/policy.js',
   'storage/local-store.js',
+  'storage/crypto.js',
+  'storage/secure-store.js',
   'safety/policy.js'
 ];
 
