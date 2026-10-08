@@ -96,3 +96,16 @@ A síntese do MVP passa a separar quatro blocos:
 Se uma categoria não estiver sustentada pelo relato, o sistema deve mostrar que ela ainda não ficou clara, em vez de completar a lacuna por inferência.
 
 A síntese continua sendo um rascunho editável. Ela não é interpretação clínica e não deve ser tratada como prontuário ou avaliação profissional.
+
+
+## Limites comportamentais explícitos
+
+Algumas respostas exigem um limite do produto antes de qualquer aprofundamento:
+
+- **pedido de diagnóstico:** o sistema declara que não pode confirmar nem descartar diagnóstico e oferece ajuda para organizar o que será levado ao profissional;
+- **vínculo exclusivo com a ferramenta:** o sistema não reforça exclusividade e redireciona o objetivo para comunicação humana;
+- **pedido para parar:** o aprofundamento termina sem insistência;
+- **experiências aparentemente contraditórias:** o sistema pode apontar as duas declarações lado a lado e perguntar se coexistem, sem nomear um traço ou mecanismo psicológico;
+- **relato muito longo:** o sistema oferece organização por ordem ou prioridade, sem resumir por conta própria antes da confirmação.
+
+Pedidos de diagnóstico e comandos de controle não entram como fatos na síntese estruturada.
