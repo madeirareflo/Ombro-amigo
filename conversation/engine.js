@@ -94,7 +94,10 @@ export function createConversation({ mode, depth = 'light' }) {
     turn: 0,
     entries: [],
     usedQuestions: [],
-    lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session
+    lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session,
+    transcript: [
+      { role: 'ai', text: START_QUESTIONS[mode] || START_QUESTIONS.session }
+    ]
   };
 }
 
@@ -112,11 +115,14 @@ export function nextQuestion(state, answer) {
     source: 'declared',
     categories: classifyDeclaredContent(text)
   });
+  if (!Array.isArray(state.transcript)) state.transcript = [];
+  state.transcript.push({ role: 'user', text });
 
   const question = chooseAdaptiveQuestion(state, text);
   state.turn += 1;
   state.lastQuestion = question;
   markQuestionUsed(state, question);
+  state.transcript.push({ role: 'ai', text: question });
   return question;
 }
 
