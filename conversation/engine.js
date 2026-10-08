@@ -34,7 +34,7 @@ const BOUNDARY_RULES = [
   {
     key: 'diagnosisRequest',
     ruleId: 'CONV-DIAGNOSIS-01',
-    pattern: /\b(você acha que eu tenho|vc acha que eu tenho|será que eu tenho|sera que eu tenho|isso significa que eu tenho|você acha que isso é|vc acha que isso e)\b/i,
+    pattern: /(você acha que eu tenho|vc acha que eu tenho|será que eu tenho|sera que eu tenho|isso significa que eu tenho|você acha que isso é|vc acha que isso e)/i,
     response: 'Eu não consigo confirmar nem descartar um diagnóstico. Posso ajudar a organizar o que você percebeu para levar ao profissional. Qual sinal ou situação você gostaria de contar primeiro?'
   },
   {
