@@ -46,7 +46,7 @@ test('menção a pensamento gera pergunta sobre o pensamento declarado', () => {
 test('autojulgamento não é reforçado como rótulo', () => {
   const state = createConversation({ mode: 'session', depth: 'medium' });
   const question = chooseAdaptiveQuestion(state, 'Sou ridículo por ter feito isso.');
-  assert.match(question, /descrevendo desse jeito|tirarmos o rótulo/i);
+  assert.match(question, /rótulo|descrevendo desse jeito|descrever desse jeito/i);
   assert.doesNotMatch(question, /você é|realmente ridículo/i);
 });
 
@@ -64,7 +64,7 @@ test('profundidade leve converge cedo para síntese em vez de interrogatório', 
   nextQuestion(state, 'É uma coisa da minha família.');
   nextQuestion(state, 'Eu travo quando tento falar.');
   const q = nextQuestion(state, 'Ainda é difícil.');
-  assert.match(q, /rascunho|Me ajuda a dizer isso|acrescentar/i);
+  assert.match(q, /próximo passo|continuar explorando|síntese|rascunho/i);
 });
 
 test('síntese estruturada separa conteúdo declarado sem inventar diagnóstico', () => {
@@ -202,4 +202,91 @@ test('modo só registrar não transforma o registro em interrogatório', () => {
   assert.match(response,/registrado|organizar|encerrar/i);
   assert.doesNotMatch(response,/por quê|o que aconteceu depois|como você se sentiu/i);
   assert.equal(state.entries.length,1);
+});
+
+
+test('correção do usuário descarta formulação em vez de defender interpretação', () => {
+  const state=createConversation({mode:'session',depth:'medium'});
+  const response=nextQuestion(state,'Não foi isso, você entendeu errado.');
+  assert.match(response,/corrigindo|descartar essa formulação/i);
+  assert.match(response,/fato|emoção|forma de dizer/i);
+  assert.deepEqual(state.entries[0].categories,['control']);
+  assert.deepEqual(buildStructuredSummary(state),{
+    facts:[],
+    emotions:[],
+    difficulties:[],
+    sessionPoints:[]
+  });
+});
+
+test('assunto sensível explícito recebe escolha e não pedido de detalhes', () => {
+  const state=createConversation({mode:'session',depth:'deep'});
+  const response=nextQuestion(state,'Quero falar de um abuso que aconteceu.');
+  assert.match(response,/assunto sensível|não precisamos entrar em detalhes/i);
+  assert.match(response,/continuar com cuidado|só registrar|levar à sessão/i);
+  assert.doesNotMatch(response,/quem fez|onde foi|conte em detalhes|o que ele fez/i);
+});
+
+test('vocabulário emocional é oferecido como hipótese opcional depois de incerteza', () => {
+  const state=createConversation({mode:'feeling',depth:'medium'});
+  openingQuestion(state);
+  nextQuestion(state,'Não sei');
+  const second=nextQuestion(state,'Não sei');
+  assert.match(second,/tristeza|medo|raiva|vergonha|culpa|ansiedade/i);
+  assert.match(second,/ou nenhuma delas/i);
+  const structured=buildStructuredSummary(state);
+  assert.deepEqual(structured.emotions,[]);
+  assert.deepEqual(structured.facts,[]);
+});
+
+test('emoção nomeada pelo usuário pode ser refletida sem amplificação clínica', () => {
+  const state=createConversation({mode:'feeling',depth:'medium'});
+  const response=nextQuestion(state,'Estou com vergonha.');
+  assert.match(response,/nomeou uma emoção|palavra/i);
+  assert.doesNotMatch(response,/trauma|transtorno|dependência|medo de abandono/i);
+  assert.deepEqual(buildStructuredSummary(state).emotions,['Estou com vergonha.']);
+});
+
+test('não prevê reação do psicólogo nem oferece falsa garantia', () => {
+  const state=createConversation({mode:'session',depth:'medium'});
+  const response=nextQuestion(state,'Meu psicólogo vai me julgar quando eu contar?');
+  assert.match(response,/não consigo prever/i);
+  assert.match(response,/leve para a sessão|levar.*sessão/i);
+  assert.doesNotMatch(response,/não vai te julgar|com certeza|vai entender/i);
+  assert.deepEqual(state.entries[0].categories,['question']);
+});
+
+test('checkpoint de agenda devolve escolha ao usuário', () => {
+  const state=createConversation({mode:'session',depth:'deep'});
+  nextQuestion(state,'Quero começar por uma coisa.');
+  nextQuestion(state,'Outra parte também importa.');
+  const response=nextQuestion(state,'Ainda estou organizando.');
+  assert.match(response,/continuar explorando|síntese|parar por hoje/i);
+});
+
+test('respostas do motor fazem no máximo uma pergunta por turno', () => {
+  const samples=[
+    ['event','Briguei com meu namorado ontem.'],
+    ['feeling','Não sei'],
+    ['session','Tenho vergonha de falar disso.'],
+    ['session','Não foi isso, você entendeu errado.'],
+    ['session','Quero falar de um trauma.'],
+    ['session','Meu psicólogo vai me julgar?']
+  ];
+  for(const [mode,text] of samples) {
+    const state=createConversation({mode,depth:'medium'});
+    const response=nextQuestion(state,text);
+    assert.ok((response.match(/\?/g)||[]).length<=1, response);
+  }
+});
+
+test('mensagens de controle e perguntas não vazam para pontos da síntese', () => {
+  const state=createConversation({mode:'session',depth:'medium'});
+  nextQuestion(state,'Briguei com meu namorado ontem.');
+  nextQuestion(state,'Você entendeu errado.');
+  nextQuestion(state,'Meu psicólogo vai me julgar?');
+  const structured=buildStructuredSummary(state);
+  assert.deepEqual(structured.facts,['Briguei com meu namorado ontem.']);
+  assert.equal(structured.sessionPoints.includes('Você entendeu errado.'),false);
+  assert.equal(structured.sessionPoints.includes('Meu psicólogo vai me julgar?'),false);
 });

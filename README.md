@@ -50,6 +50,10 @@ Depois abra:
 http://localhost:4173
 ```
 
+## Base de evidências
+
+As decisões de comportamento conversacional e segurança são rastreadas em [`docs/EVIDENCE_BASE.md`](docs/EVIDENCE_BASE.md), com referências oficiais e literatura revisada por pares. Essa base orienta o design, mas não constitui validação clínica do produto.
+
 ## Testes
 
 ```bash
