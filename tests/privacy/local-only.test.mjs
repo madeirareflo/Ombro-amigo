@@ -43,6 +43,6 @@ test('recursos carregados pela página principal são locais', async () => {
 test('compartilhamento manual é descrito como cópia, não envio automático', async () => {
   const html=await readFile('index.html','utf8');
   assert.match(html,/Copiar síntese/);
-  assert.match(html,/não envia nada/i);
+  assert.match(html,/não envia o texto|não é enviado ao mantenedor/i);
   assert.doesNotMatch(html,/navigator\.share/);
 });
