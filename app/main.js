@@ -4,6 +4,7 @@ import { saveLocalState, loadLocalState, clearLocalState } from '../storage/loca
 const home=document.querySelector('#home-view');
 const conversationView=document.querySelector('#conversation-view');
 const summaryView=document.querySelector('#summary-view');
+const privacyView=document.querySelector('#privacy-view');
 const messages=document.querySelector('#messages');
 const reply=document.querySelector('#reply');
 const replyForm=document.querySelector('#reply-form');
@@ -16,9 +17,9 @@ let session=null;
 let currentView='home';
 
 function show(view) {
-  [home,conversationView,summaryView].forEach(node=>node.classList.add('hidden'));
+  [home,conversationView,summaryView,privacyView].forEach(node=>node.classList.add('hidden'));
   view.classList.remove('hidden');
-  currentView=view===summaryView?'summary':view===conversationView?'conversation':'home';
+  currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':'home';
 }
 
 function addMessage(kind,text) {
@@ -140,6 +141,12 @@ document.querySelector('#accept-summary').addEventListener('click',()=>{
 document.querySelector('#edit-summary').addEventListener('click',()=>summaryText.focus());
 document.querySelector('#reject-summary').addEventListener('click',()=>show(conversationView));
 document.querySelector('#resume-conversation').addEventListener('click',resumeSavedConversation);
+document.querySelector('#open-privacy').addEventListener('click',()=>show(privacyView));
+document.querySelector('#privacy-link').addEventListener('click',()=>show(privacyView));
+document.querySelector('#privacy-back').addEventListener('click',()=>{
+  show(home);
+  refreshResumePanel();
+});
 document.querySelector('#new-conversation').addEventListener('click',forgetConversation);
 document.querySelector('#delete-conversation').addEventListener('click',()=>{
   if(confirm('Apagar a conversa salva neste aparelho? Essa ação não pode ser desfeita.')) {
@@ -148,7 +155,9 @@ document.querySelector('#delete-conversation').addEventListener('click',()=>{
 });
 
 summaryText.addEventListener('input',()=>persist('summary'));
-window.addEventListener('pagehide',()=>persist(currentView));
+window.addEventListener('pagehide',()=>{
+  if(currentView==='conversation' || currentView==='summary') persist(currentView);
+});
 
 refreshResumePanel();
 
