@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#315c56">
+  <meta name="description" content="Ombro-amigo: apoio à organização do que você quer levar para a psicoterapia.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Ombro-amigo</title>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <strong>Ombro-amigo</strong>
+      <span class="subtitle">uma ponte para a conversa</span>
+    </div>
+    <span class="privacy-badge">🔒 Privado no aparelho</span>
+  </header>
+
+  <main class="app-shell">
+    <section id="home-view" class="card">
+      <p class="eyebrow">Antes da sessão</p>
+      <h1>O que você precisa hoje?</h1>
+      <p class="muted">Você não precisa saber explicar tudo de uma vez.</p>
+
+      <div class="choice-grid">
+        <button data-start="event">Quero organizar algo que aconteceu</button>
+        <button data-start="session">Quero falar sobre algo na próxima sessão</button>
+        <button data-start="feeling">Não sei explicar o que estou sentindo</button>
+      </div>
+
+      <fieldset class="depth-fieldset">
+        <legend>Quanto você quer entrar nisso agora?</legend>
+        <label><input type="radio" name="depth" value="light" checked> Só quero começar</label>
+        <label><input type="radio" name="depth" value="medium"> Posso falar um pouco</label>
+        <label><input type="radio" name="depth" value="deep"> Quero organizar isso a fundo</label>
+      </fieldset>
+
+      <details>
+        <summary>O que esta ferramenta faz — e o que não faz</summary>
+        <p>Ela ajuda a organizar o que você quer dizer. Não diagnostica, não substitui seu psicólogo e não envia nada automaticamente.</p>
+      </details>
+    </section>
+
+    <section id="conversation-view" class="card hidden" aria-live="polite">
+      <div class="conversation-header">
+        <button id="back-home" class="ghost">← Voltar</button>
+        <span id="depth-label" class="pill"></span>
+      </div>
+      <div id="messages" class="messages"></div>
+      <form id="reply-form" class="reply-form">
+        <label for="reply">Sua resposta</label>
+        <textarea id="reply" rows="3" placeholder="Você pode responder do seu jeito."></textarea>
+        <div class="actions">
+          <button type="submit">Continuar</button>
+          <button type="button" id="say-this" class="secondary">Me ajuda a dizer isso</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="summary-view" class="card hidden">
+      <p class="eyebrow">Síntese para você revisar</p>
+      <h2>Isso representa o que você quis dizer?</h2>
+      <textarea id="summary-text" rows="9"></textarea>
+      <div class="summary-actions">
+        <button id="accept-summary">Representa o que eu quis dizer</button>
+        <button id="edit-summary" class="secondary">Quero editar</button>
+        <button id="reject-summary" class="ghost">Não representa</button>
+      </div>
+      <p class="muted small">Nada é enviado para outra pessoa nesta versão.</p>
+    </section>
+  </main>
+
+  <footer>Protótipo para validação profissional. Não é psicoterapia nem serviço de emergência.</footer>
+  <script type="module" src="./app/main.js"></script>
+</body>
+</html>
