@@ -58,7 +58,7 @@ test('perigo explícito interrompe fluxo sem produzir score clínico', () => {
   const explicit=detectExplicitImmediateDanger('Quero me suicidar.');
   const result=assessSafety({explicitImmediateDanger:explicit});
   assert.equal(result.interrupt,true);
-  assert.equal(result.level,'explicit-danger-language');
+  assert.equal(result.level,'immediate-risk');
   assert.match(result.message,/não consigo avaliar|ajuda humana/i);
   assert.doesNotMatch(result.message,/score|baixo risco|alto risco|diagnóstico/i);
 });
