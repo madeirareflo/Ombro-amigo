@@ -1,0 +1,11 @@
+{
+  "name": "Ombro-amigo",
+  "short_name": "Ombro",
+  "description": "Apoio à organização do que você quer levar para a psicoterapia.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#eef3f0",
+  "theme_color": "#315c56",
+  "lang": "pt-BR",
+  "icons": []
+}
