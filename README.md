@@ -46,7 +46,10 @@ http://localhost:4173
 
 ```bash
 npm test
+npm run check
 ```
+
+A suíte também verifica o contrato de privacidade local e os arquivos necessários para a PWA funcionar offline depois da primeira carga.
 
 ## Estrutura
 
