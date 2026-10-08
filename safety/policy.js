@@ -74,7 +74,7 @@ export function assessSafety({ explicitImmediateDanger = false } = {}) {
   }
 
   return {
-    level: 'explicit-danger-language',
+    level: 'immediate-risk',
     interrupt: true,
     message:
       'Você escreveu uma frase de perigo imediato. Eu não consigo avaliar a situação por aqui. Procure ajuda humana agora: uma pessoa de confiança, seu profissional de saúde ou um serviço de emergência da sua região.'
