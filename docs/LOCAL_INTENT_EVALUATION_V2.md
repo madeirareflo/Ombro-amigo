@@ -5,21 +5,21 @@ Dependências: PR #32 (contexto) → PR #33 (baseline lexical) → PR #34 (avali
 
 ## 1. Corpus de avaliação congelado
 
-\`tests/fixtures/local-intent-eval-v2.mjs\` contém **320 frases totalmente fictícias**, distribuídas em:
+`tests/fixtures/local-intent-eval-v2.mjs` contém **320 frases totalmente fictícias**, distribuídas em:
 
 - oito classes balanceadas, com 40 frases por classe;
 - cinco famílias de paráfrases por classe, oito frases por família;
-- classes \`clarify\`, \`summary\`, \`continue\`, \`uncertainty\`, \`scope_all\`, \`stop\`, \`skip\`, \`other\`;
+- classes `clarify`, `summary`, `continue`, `uncertainty`, `scope_all`, `stop`, `skip`, `other`;
 - negativos difíceis: citação literal, fala de terceiro, negação, narrativa de eventos antigos e relato comum.
 
 NÃO há relatos pessoais, prontuários, dados de pacientes nem qualquer recolhimento pela PWA.
 
-A função \`validateEvaluationFixtures()\` falha se alguma frase tiver repetição normalizada,
+A função `validateEvaluationFixtures()` falha se alguma frase tiver repetição normalizada,
 igualdade literal com o corpus experimental de treino ou origem diferente de
-\`synthetic-eval\`. Isso **não prova independência semântica**: parte do vocabulário,
+`synthetic-eval`. Isso **não prova independência semântica**: parte do vocabulário,
 das intenções e das estruturas linguísticas continua relacionada ao corpus de treino.
 
-\`partitionByFamily()\` mantém cada família inteira em apenas um dos dois subconjuntos:
+`partitionByFamily()` mantém cada família inteira em apenas um dos dois subconjuntos:
 
 | Subconjunto | Famílias | Frases | Uso |
 |---|---:|---:|---|
@@ -34,16 +34,16 @@ e criar cenários inéditos antes de desenvolver o próximo modelo.
 
 Dentro do repositório, com Node.js 20+:
 
-\`\`\`powershell
+```powershell
 node scripts/evaluate-local-intent-v2.mjs
-\`\`\`
+```
 
 O relatório JSON contém apenas estatísticas agregadas — nenhum texto de relato:
 
 - acurácia e macro-F1 da **hipótese candidata**, mesmo que tenha sido rejeitada;
 - precisão entre as ações aceitas e **cobertura das classes permitidas**;
 - matriz de confusão separada para hipóteses e ações permitidas;
-- falsos acionamentos nas classes \`stop\`, \`skip\` e \`other\`;
+- falsos acionamentos nas classes `stop`, `skip` e `other`;
 - taxa e motivos de abstenção e recall por intenção;
 - bloqueios de publicação independentes do escore.
 
@@ -53,7 +53,7 @@ clínica, desempenho suficiente nem capacidade de conversa natural.
 
 ## 2.1 Resultados reais do baseline no holdout sintético
 
-Na execução de CI do commit \`b19dbd5\`, a suíte reportou **261 testes
+Na execução de CI do commit `b19dbd5`, a suíte reportou **261 testes
 aprovados**. O conjunto de **256 frases sintéticas do holdout** teve:
 
 | Métrica | Resultado | Interpretação |
@@ -62,7 +62,7 @@ aprovados**. O conjunto de **256 frases sintéticas do holdout** teve:
 | Acurácia da intenção candidata | **67,58%** | Proporção de hipóteses corretas em frases sintéticas |
 | Precisão das ações aceitas | **96%** | 24 acertos entre 25 decisões aceitas; amostra pequena |
 | Cobertura das cinco classes acionáveis | **15%** | Reconhece poucas das intenções que poderia sugerir |
-| Falsos acionamentos em \`stop\`, \`skip\` ou \`other\` | **1** | Bloqueador de ativação: uma frase protegida recebeu sugestão indevida |
+| Falsos acionamentos em `stop`, `skip` ou `other` | **1** | Bloqueador de ativação: uma frase protegida recebeu sugestão indevida |
 | Abstenções | **231/256** | Política conservadora reduz cobertura e risco, mas não zera falsos positivos |
 
 **Decisão:** não conectar o classificador à UI, não alterar thresholds
@@ -72,26 +72,41 @@ O conjunto sintético não representa a distribuição de relatos reais.
 
 ## 3. Laboratório experimental ONNX (opcional)
 
-O código em \`experiments/onnx-lab/\` pode comparar o baseline lexical com um
+O código em `experiments/onnx-lab/` pode comparar o baseline lexical com um
 encoder de embeddings ONNX quantizado, utilizando **exclusivamente arquivos
 locais previamente obtidos, aprovados e conferidos por hash**.
 
-A PWA **não** incorpora \`@huggingface/transformers\`, ONNX, modelo neural,
+A PWA **não** incorpora `@huggingface/transformers`, ONNX, modelo neural,
 download de pesos, CDN ou inferência remota nesta etapa. O laboratório possui
-seu próprio \`package.json\`, fora do app publicado, e não é carregado pela UI.
+seu próprio `package.json`, fora do app publicado, e não é carregado pela UI.
+
+### Primeiro candidato para teste (não baixado neste PR)
+
+A família [paraphrase-multilingual-MiniLM-L12-v2](https://huggingface.co/onnx-community/paraphrase-multilingual-MiniLM-L12-v2-ONNX)
+é um ponto de partida: o modelo de similaridade multilíngue declara suporte a
+português e licença Apache-2.0. Há também uma
+[distribuição Transformers.js com ONNX int8/quantized](https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2/tree/main/onnx),
+cujo artefato int8 tem aproximadamente **118 MB**, antes de tokenizer,
+runtime, memória temporária e caches. Essas informações descrevem
+**artefatos disponíveis, não compatibilidade ou qualidade já comprovadas
+no Ombro-amigo**.
+
+Antes de baixar pesos para testes, verificar a revisão, a licença da versão
+exata e o conjunto completo de arquivos. A execução deve ser local, com
+manifest/hash, e não em provedor remoto de inferência.
 
 ### Pré-requisitos de pesquisa (ainda NÃO atendidos no repositório)
 
 1. Selecionar encoder de português/multilíngue com licença e model card revisados.
 2. Converter/quantizar o encoder para ONNX compatível com Transformers.js.
 3. Guardar o pack *fora do repositório Git*, por exemplo:
-   \`C:\LaboratorioLocal\modelos\encoder-ptbr-q8\`.
-4. Criar um \`manifest.json\` no diretório do pack, contendo:
-   - \`modelName\` (nome da pasta, sem separadores);
-   - \`modelRevision\` (SHA/revisão exata);
-   - \`license\` (licença verificada);
-   - \`approvedForExperiment: true\` **somente após avaliação da licença**;
-   - \`files\` com **TODOS** os arquivos obrigatórios e seus SHA-256.
+   `C:\LaboratorioLocal\modelos\encoder-ptbr-q8`.
+4. Criar um `manifest.json` no diretório do pack, contendo:
+   - `modelName` (nome da pasta, sem separadores);
+   - `modelRevision` (SHA/revisão exata);
+   - `license` (licença verificada);
+   - `approvedForExperiment: true` **somente após avaliação da licença**;
+   - `files` com **TODOS** os arquivos obrigatórios e seus SHA-256.
 5. Instalar a versão fixada de Transformers.js no ambiente isolado do
    laboratório, não na raiz da PWA. Essa instalação de dependências é uma
    ação de desenvolvimento separada; **não implica baixar relatos nem
@@ -99,7 +114,7 @@ seu próprio \`package.json\`, fora do app publicado, e não é carregado pela U
 
 Formato ilustrativo, hashes deliberadamente inválidos:
 
-\`\`\`json
+```json
 {
   "modelName": "encoder-ptbr-q8",
   "modelRevision": "SHA_DA_REVISAO_DA_ORIGEM",
@@ -111,18 +126,18 @@ Formato ilustrativo, hashes deliberadamente inválidos:
     {"path": "onnx/model_quantized.onnx", "sha256": "SUBSTITUIR_SHA256_REAL"}
   ]
 }
-\`\`\`
+```
 
 Com um pack aprovado e todas as dependências do laboratório presentes:
 
-\`\`\`powershell
+```powershell
 node experiments/onnx-lab/bench-local-onnx.mjs --model-root "C:\LaboratorioLocal\modelos" --model-name "encoder-ptbr-q8" --split validation --max-samples 64
-\`\`\`
+```
 
 O script confere licença sinalizada, nome/revisão declarados, existência e hash
-dos arquivos listados, configura \`env.allowRemoteModels = false\`,
-\`env.allowLocalModels = true\`, caminho de arquivos locais e bloqueia
-\`fetch\` neste processo. Se o modelo, tokenizer ou runtime WASM não puder ser
+dos arquivos listados, configura `env.allowRemoteModels = false`,
+`env.allowLocalModels = true`, caminho de arquivos locais e bloqueia
+`fetch` neste processo. Se o modelo, tokenizer ou runtime WASM não puder ser
 carregado localmente, **deve falhar**, nunca recorrer silenciosamente a CDN.
 Os valores de similaridade e margem são **heurísticas não calibradas**.
 
@@ -146,7 +161,7 @@ específico. Validação real em Android/iPhone permanece pendente.
   classificar risco psicológico.
 - Atributos derivados de conversa real são dados sensíveis: não salvar
   embeddings, prompts ou outputs de pessoas em logs.
-- Sem bypass da CSP \`connect-src 'none'\`, armazenamento cifrado e
+- Sem bypass da CSP `connect-src 'none'`, armazenamento cifrado e
   suporte offline.
 - Antes de ativar um encoder no produto, exigir testes adversariais,
   avaliação humana cega, hardware real, model card/licença, integridade,
@@ -156,5 +171,5 @@ específico. Validação real em Android/iPhone permanece pendente.
   urgência perigosa pode ser publicada.
 
 Fonte de desenho: pesquisa técnica de 22 páginas enviada pela equipe e
-\`docs/LOCAL_AI_ARCHITECTURE.md\`. Documento experimental, não substitui
+`docs/LOCAL_AI_ARCHITECTURE.md`. Documento experimental, não substitui
 supervisão/revisão de profissionais da Psicologia.
