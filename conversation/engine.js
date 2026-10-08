@@ -194,8 +194,9 @@ function questionDimension(text) {
   const value = String(text || '').toLocaleLowerCase('pt-BR')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (/pensamentos.{0,50}corpo.{0,80}vontade.{0,100}relac|corpo.{0,60}pensamentos.{0,100}vontade.{0,100}relac/.test(value)) return 'scope';
-  if (/em que momento|quando (essa|ela|isso|ele).{0,45}(aparec|acontec)|antes, durante ou depois/.test(value)) return 'timing';
+  // O contexto situacional tem precedência sobre expressões de tempo incidentais.
   if (/o que estava acontecendo|acontecendo ao redor|exemplo concreto/.test(value)) return 'circumstances';
+  if (/em que momento|quando (essa|ela|isso|ele).{0,45}(aparec|acontec)|antes, durante ou depois/.test(value)) return 'timing';
   if (/o que aconteceu primeiro|o que percebeu em voce logo depois/.test(value)) return 'sequence';
   if (/testar palavras|representa bem|alguma chega perto|ou nenhuma delas/.test(value)) return 'affect_words';
   if (/parte mais importante|qual parte.{0,65}registrar|qual trecho.{0,65}importante|qual parte.{0,65}centro/.test(value)) return 'priority';
