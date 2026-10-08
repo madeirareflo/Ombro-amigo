@@ -58,7 +58,9 @@ export function auditSummaryGrounding(state){
       unsupportedClaimRate:claims.length ? unsupported.length/claims.length : 0,
       sourceCoverage:uniqueEligible.length ? coveredSources.length/uniqueEligible.length : 1
     },
+    unsupportedClaimCount:unsupported.length,
     unsupportedClaims:unique(unsupported),
+    excludedLeakCount:excludedLeaks.length,
     excludedLeaks:unique(excludedLeaks),
     coveredSources,
     eligibleSources:uniqueEligible,
@@ -85,9 +87,10 @@ export function simulateSummaryGroundingCase(definition){
 export function aggregateGroundingAudits(results){
   const audits=results.map(result=>result.audit || result);
   const totalClaims=audits.reduce((sum,audit)=>sum+audit.totals.summaryClaims,0);
-  const totalUnsupported=audits.reduce((sum,audit)=>sum+audit.unsupportedClaims.length,0);
+  const totalUnsupported=audits.reduce((sum,audit)=>sum+audit.unsupportedClaimCount,0);
   const totalEligible=audits.reduce((sum,audit)=>sum+audit.totals.eligibleSources,0);
   const totalCovered=audits.reduce((sum,audit)=>sum+audit.coveredSources.length,0);
+  const totalExcludedLeaks=audits.reduce((sum,audit)=>sum+audit.excludedLeakCount,0);
   const leaks=audits.flatMap(audit=>audit.excludedLeaks);
 
   return {
@@ -98,7 +101,7 @@ export function aggregateGroundingAudits(results){
     totalEligibleSources:totalEligible,
     totalCoveredSources:totalCovered,
     sourceCoverage:totalEligible ? totalCovered/totalEligible : 1,
-    excludedLeakCount:leaks.length,
+    excludedLeakCount:totalExcludedLeaks,
     excludedLeaks:unique(leaks)
   };
 }
