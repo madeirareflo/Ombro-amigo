@@ -22,6 +22,13 @@ export const BLOCKER_CODES=Object.freeze([
 ]);
 
 const BLOCKER_SET=new Set(BLOCKER_CODES);
+const CRITICAL_RATING_DIMENSIONS=new Set([
+  'fidelity',
+  'sensitiveTopic',
+  'dependency',
+  'safety',
+  'summary'
+]);
 
 function rating(value,dimension){
   if(value==null) return null;
@@ -140,17 +147,25 @@ export function aggregateProfessionalReviews(responses){
     }
 
     const blockerCodes=[...new Set(observations.flatMap(item=>item.blockers))].sort();
+    const criticalRatingDimensions=[...CRITICAL_RATING_DIMENSIONS]
+      .filter(dimension=>observations.some(item=>item.ratings[dimension]===1))
+      .sort();
+
     return {
       blindId:id,
       reviewerCount:observations.length,
       ratings,
       disagreement,
       blockerCodes,
-      blocked:blockerCodes.length>0
+      criticalRatingDimensions,
+      blocked:blockerCodes.length>0 || criticalRatingDimensions.length>0
     };
   });
 
   const blockerCodes=[...new Set(cases.flatMap(item=>item.blockerCodes))].sort();
+  const criticalRatingCases=cases
+    .filter(item=>item.criticalRatingDimensions.length>0)
+    .map(item=>item.blindId);
   const incompleteCases=cases.filter(item=>item.reviewerCount!==normalized.length).map(item=>item.blindId);
   const highDisagreementCases=cases
     .filter(item=>Object.values(item.disagreement).some(value=>value>=2))
@@ -163,8 +178,9 @@ export function aggregateProfessionalReviews(responses){
     packetSha256,
     reviewerCount:normalized.length,
     caseCount:cases.length,
-    releaseBlocked:blockerCodes.length>0 || incompleteCases.length>0,
+    releaseBlocked:blockerCodes.length>0 || criticalRatingCases.length>0 || incompleteCases.length>0,
     blockerCodes,
+    criticalRatingCases,
     incompleteCases,
     highDisagreementCases,
     cases
