@@ -126,6 +126,7 @@ test('mede precisão e cobertura em paráfrases fictícias fora do corpus', () =
   const correct = accepted.filter(row => row.result.intent === row.label);
   const accuracy = accepted.length ? correct.length / accepted.length : 0;
   const coverage = accepted.length / evaluated.length;
+  console.log('LOCAL_INTENT_HELDOUT', JSON.stringify({ total: evaluated.length, accepted: accepted.length, correct: correct.length, accuracy, coverage }));
   assert.ok(accuracy >= 0.85, JSON.stringify({ accuracy, coverage, incorrect: accepted.filter(x => x.result.intent !== x.label) }));
   assert.ok(coverage >= 0.40, JSON.stringify({ accuracy, coverage }));
 });
