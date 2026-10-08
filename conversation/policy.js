@@ -22,6 +22,39 @@ export const CONVERSATION_POLICY = Object.freeze([
     limitation:'Escuta reflexiva é adaptada como princípio de UX, não como tratamento.'
   },
   {
+    id:'CONV-CLARIFY-01',
+    category:'behavior',
+    title:'Esclarecer sem avançar o conteúdo',
+    objective:'Quando o usuário pede esclarecimento, reformular a pergunta anterior em vez de tratar o pedido como novo conteúdo.',
+    allowed:['como assim?','não entendi','reformular de modo mais simples'],
+    forbidden:['registrar o pedido de esclarecimento como fato','mudar de assunto sem responder'],
+    evidence:['SAMHSA-TIP35-2019','RESNICOW-MCMASTER-2012'],
+    evidenceStrength:'guidance-plus-peer-reviewed',
+    limitation:'Regra de UX conversacional; não implica compreensão semântica geral.'
+  },
+  {
+    id:'AUTONOMY-CONTINUE-01',
+    category:'autonomy',
+    title:'Continuar significa continuar',
+    objective:'Quando o usuário escolhe explicitamente explorar mais, fazer uma nova pergunta útil sem repetir imediatamente o checkpoint.',
+    allowed:['continuar explorando','nova pergunta de baixa inferência'],
+    forbidden:['repetir o mesmo checkpoint','tratar a escolha como conteúdo clínico'],
+    evidence:['RESNICOW-MCMASTER-2012','SAMHSA-TRAUMA-2023'],
+    evidenceStrength:'guidance-plus-peer-reviewed',
+    limitation:'A escolha da próxima pergunta continua baseada em regras locais.'
+  },
+  {
+    id:'AUTONOMY-SUMMARY-01',
+    category:'autonomy',
+    title:'Pedido natural de síntese',
+    objective:'Permitir que pedidos como “Me ajuda a dizer isso” acionem a síntese sem virar conteúdo do relato.',
+    allowed:['abrir síntese editável','preservar apenas conteúdo previamente declarado'],
+    forbidden:['incluir o comando do usuário na síntese'],
+    evidence:['WHO-PFA-2011','SAMHSA-TRAUMA-2023'],
+    evidenceStrength:'professional-guidance',
+    limitation:'É um atalho de interface, não interpretação clínica.'
+  },
+  {
     id:'AUTONOMY-CHECKPOINT-01',
     category:'autonomy',
     title:'Checkpoint de escolha',
