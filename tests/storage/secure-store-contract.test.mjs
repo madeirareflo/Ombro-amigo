@@ -14,10 +14,26 @@ test('armazenamento persistente usa IndexedDB e AES-GCM',async()=>{
   assert.match(secure,/indexedDB|indexedDbApi/);
   assert.match(secure,/encrypted-indexeddb/);
   assert.match(crypto,/AES-GCM/);
+  assert.match(crypto,/iv\.length!==12/);
 });
 
 test('fallback seguro é memória, não conversa em localStorage',async()=>{
   const secure=await readFile('storage/secure-store.js','utf8');
   assert.match(secure,/memory-only/);
   assert.doesNotMatch(secure,/localStorage\.setItem/);
+});
+
+test('aplicativo usa o secure store para conteúdo sensível',async()=>{
+  const app=await readFile('app/main.js','utf8');
+  assert.match(app,/storage\/secure-store\.js/);
+  assert.match(app,/saveConversationState/);
+  assert.match(app,/loadConversationState/);
+  assert.doesNotMatch(app,/saveLocalState|loadLocalState/);
+});
+
+test('exclusão segura inclui registro atual, backup e chave',async()=>{
+  const secure=await readFile('storage/secure-store.js','utf8');
+  assert.match(secure,/state\.delete\(STATE_ID\)/);
+  assert.match(secure,/state\.delete\(BACKUP_ID\)/);
+  assert.match(secure,/keys\.delete\(KEY_ID\)/);
 });
