@@ -358,3 +358,50 @@ test('pergunta contextual acompanha relato perceptivo sem atribuir diagnóstico'
   assert.doesNotMatch(response,/psicose|mania|dissociação|diagnóstico/i);
   assert.equal(state.entries[0].source,'declared');
 });
+
+
+test('variações de me ajude a dizer isso acionam síntese e nunca viram conteúdo do relato',()=>{
+  for(const phrase of ['me ajude a dizer isso','Me ajuda a dizer isso', 'me ajude a dizer isso?']){
+    const state=createConversation({mode:'feeling',depth:'light'});
+    nextQuestion(state,'Sinto que o mundo está mais colorido.');
+    const before=state.entries.length;
+    assert.equal(detectConversationControlIntent(phrase),'summary');
+    const response=nextQuestion(state,phrase);
+    assert.equal(state.entries.length,before);
+    assert.match(response,/síntese editável/i);
+    assert.doesNotMatch(buildSummary(state),/me ajud[ae] a dizer isso/i);
+  }
+});
+
+test('em tudo isso responde à pergunta sobre áreas sem repetir a pergunta ou inventar fato',()=>{
+  const state=createConversation({mode:'feeling',depth:'light'});
+  openingQuestion(state);
+  const response=nextQuestion(state,'em tudo isso');
+  assert.match(response,/mais de uma dessas áreas/i);
+  assert.doesNotMatch(response,/você percebe isso mais nos pensamentos/i);
+  assert.deepEqual(buildStructuredSummary(state),{
+    facts:[],emotions:[],difficulties:[],sessionPoints:[]
+  });
+});
+
+test('mundo colorido e sensação de felicidade recebe continuação específica sem inferência clínica',()=>{
+  const state=createConversation({mode:'feeling',depth:'light'});
+  const response=nextQuestion(state,'sinto o mundo mais colorido ao passo que sinto uma falsa sensação de felicidade');
+  assert.match(response,/colorido|felicidade/i);
+  assert.doesNotMatch(response,/diagnóstico|hipomania|mania|psicose|certeza/i);
+});
+
+test('checkpoints não voltam depois de outras mensagens, mesmo após limite de profundidade',()=>{
+  const state=createConversation({mode:'feeling',depth:'light'});
+  openingQuestion(state);
+  nextQuestion(state,'Ontem percebi uma mudança.');
+  nextQuestion(state,'Eu fiquei sem entender a experiência.');
+  nextQuestion(state,'Foi difícil falar sobre isso.');
+  const countAfterThree=state.ruleHistory.filter(x=>x.ruleId==='AUTONOMY-CHECKPOINT-01').length;
+  for(const answer of ['Também penso nisso.','Fico com vergonha de dizer.', 'Isso me fez lembrar do dia anterior.','Ainda penso sobre isso.']){
+    nextQuestion(state,answer);
+  }
+  const countAfterSeven=state.ruleHistory.filter(x=>x.ruleId==='AUTONOMY-CHECKPOINT-01').length;
+  assert.equal(countAfterThree,1);
+  assert.equal(countAfterSeven,1);
+});
