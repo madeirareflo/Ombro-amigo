@@ -64,3 +64,14 @@ test('versão e participante precisam de códigos rastreáveis',()=>{
   assert.throws(()=>createPilotMetrics({...sample(),sourceSha:'main'}));
   assert.throws(()=>createPilotMetrics({...sample(),participantCode:'participant-1'}));
 });
+
+
+test('compreensão de papel exige booleanos e rating de fidelidade não aceita typo silencioso',()=>{
+  const badRole=sample();
+  badRole.roleComprehension={...badRole.roleComprehension,appDiagnoses:'não'};
+  assert.throws(()=>createPilotMetrics(badRole),/boolean or null/);
+
+  const badFidelity=sample();
+  badFidelity.fidelity={...badFidelity.fidelity,rating:'quase tudo'};
+  assert.throws(()=>createPilotMetrics(badFidelity),/invalid fidelity rating/);
+});
