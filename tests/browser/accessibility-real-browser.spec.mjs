@@ -106,6 +106,7 @@ test('vistas principais não apresentam violações WCAG A/AA detectáveis pelo 
   await page.locator('#privacy-link').click();
   await assertNoAxeViolations(page,'privacy');
 
-  await page.locator('[data-urgent-help]').last().click();
+  await page.locator('#privacy-back').click();
+  await page.locator('#home-view [data-urgent-help]').click();
   await assertNoAxeViolations(page,'safety');
 });
