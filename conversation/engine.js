@@ -86,7 +86,7 @@ const CONTROL_INTENTS = [
   {
     key:'summary',
     ruleId:'AUTONOMY-SUMMARY-01',
-    pattern:/^(me ajuda a dizer isso|montar síntese|montar sintese|fazer síntese|fazer sintese|quero uma síntese|quero uma sintese|ir para a síntese|ir para a sintese)[?!.\s]*$/i
+    pattern:/^(me (?:ajuda|ajude) a dizer isso|me ajuda a falar disso|montar síntese|montar sintese|fazer síntese|fazer sintese|quero uma síntese|quero uma sintese|ir para a síntese|ir para a sintese)[?!.\s]*$/i
   }
 ];
 
@@ -327,13 +327,42 @@ export function chooseAdaptiveTurn(state, answer) {
     };
   }
 
+  // Prioriza detalhes declarados, sem atribuir significado clínico a eles.
+  if (/\b(mundo|ambiente|ao redor|luz|claro|clara|colorido|colorida|cores)\b/i.test(text) && /\b(assusta|assustado|assustada|medo|estranho|estranha)\b/i.test(text)) {
+    const options=[
+      'Você descreveu uma mudança em como percebe o ambiente e disse que isso às vezes assusta. Quer registrar quando percebe isso ou como é para você?',
+      'Sem precisar explicar a causa, o que gostaria que seu psicólogo soubesse sobre essa experiência?'
+    ];
+    const candidate=firstUnused(state,options);
+    if(candidate) return {text:candidate,ruleId:'CONV-REFLECT-01'};
+  }
+
+  // Resposta curta à pergunta inicial: não trata "tudo isso" como fato clínico.
+  if (/^(em\s+)?tudo\s+isso[.!?]*$/i.test(text) || /^em\s+todas\s+(essas\s+)?áreas[.!?]*$/i.test(text)) {
+    return {
+      text: 'Entendi: você percebe isso em mais de uma dessas áreas. Quer escolher uma parte para registrar primeiro, ou prefere contar do seu jeito?',
+      ruleId: 'CONV-REFLECT-01'
+    };
+  }
+
+  // Reflexão ancorada nos termos que a pessoa realmente usou.
+  if (/\b(mundo|ambiente|ao redor|colorido|colorida|cores)\b/i.test(text) && /\b(felicidade|feliz)\b/i.test(text)) {
+    const options=[
+      'Você descreveu o mundo como mais colorido e também mencionou uma sensação de felicidade. O que gostaria de registrar sobre essa experiência?',
+      'Quando fala dessa sensação de felicidade, como gostaria de explicá-la na sessão, com suas próprias palavras?'
+    ];
+    const candidate=firstUnused(state,options);
+    if(candidate) return { text:candidate,ruleId:'CONV-REFLECT-01' };
+  }
+
   const matchedSignal = SIGNALS.find(signal => signal.pattern.test(text));
   if (matchedSignal) {
     const candidate = firstUnused(state, matchedSignal.questions);
     if (candidate) return { text: candidate, ruleId: matchedSignal.ruleId };
   }
 
-  if ((Number(state.turn || 0) + 1) % 3 === 0 && state.lastRuleId!=='AUTONOMY-CHECKPOINT-01') {
+  const checkpointAlreadyShown = (state.ruleHistory || []).some(entry=>entry.ruleId==='AUTONOMY-CHECKPOINT-01');
+  if (!checkpointAlreadyShown && (Number(state.turn || 0) + 1) % 3 === 0) {
     return {
       text: 'Já apareceu material suficiente para você escolher o próximo passo. Você prefere continuar explorando, montar uma síntese agora ou parar por hoje?',
       ruleId: 'AUTONOMY-CHECKPOINT-01'
@@ -341,7 +370,7 @@ export function chooseAdaptiveTurn(state, answer) {
   }
 
   const limit = DEPTH_LIMITS[state.depth] || DEPTH_LIMITS.light;
-  if (state.turn >= limit && state.lastRuleId!=='AUTONOMY-CHECKPOINT-01') {
+  if (!checkpointAlreadyShown && state.turn >= limit) {
     return {
       text: 'Já temos material suficiente para montar um primeiro rascunho. Você prefere usar “Me ajuda a dizer isso” ou acrescentar mais alguma coisa?',
       ruleId: 'AUTONOMY-CHECKPOINT-01'
@@ -425,6 +454,7 @@ function classifyDeclaredContent(text) {
   if (boundary?.key === 'stop' || boundary?.key === 'correction') return ['control'];
   if (boundary?.key === 'dependency') return ['difficulty'];
   if (UNCERTAINTY_PATTERN.test(value)) return ['uncertainty'];
+  if (/^(em\s+)?tudo\s+isso[.!?]*$/i.test(value) || /^em\s+todas\s+(essas\s+)?áreas[.!?]*$/i.test(value)) return ['control'];
 
   if (/\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value)) {
     categories.push('emotion');

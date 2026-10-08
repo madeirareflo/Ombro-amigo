@@ -1,4 +1,4 @@
-const CACHE='ombro-amigo-v16';
+const CACHE='ombro-amigo-v17';
 const CACHE_PREFIX='ombro-amigo-';
 const ASSETS=['./','./index.html','./styles.css','./manifest.webmanifest','./icon.svg','./app/main.js','./app/clipboard.js','./app/summary-model.js','./conversation/engine.js','./conversation/policy.js','./storage/local-store.js','./storage/crypto.js','./storage/secure-store.js','./safety/policy.js'];
 
