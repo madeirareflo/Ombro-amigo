@@ -1,7 +1,14 @@
 import { createConversation, openingQuestion, nextQuestion, buildSummary } from '../conversation/engine.js';
-import { saveLocalState, loadLocalState, clearLocalState } from '../storage/local-store.js';
+import {
+  saveLocalState,
+  loadLocalState,
+  clearLocalState,
+  saveAcknowledgement,
+  loadAcknowledgement
+} from '../storage/local-store.js';
 import { urgentHelpGuidance } from '../safety/policy.js';
 
+const onboardingView=document.querySelector('#onboarding-view');
 const home=document.querySelector('#home-view');
 const conversationView=document.querySelector('#conversation-view');
 const summaryView=document.querySelector('#summary-view');
@@ -18,12 +25,12 @@ const resumePanel=document.querySelector('#resume-panel');
 const resumeInfo=document.querySelector('#resume-info');
 
 let session=null;
-let currentView='home';
+let currentView='onboarding';
 
 function show(view) {
-  [home,conversationView,summaryView,privacyView,safetyView].forEach(node=>node.classList.add('hidden'));
+  [onboardingView,home,conversationView,summaryView,privacyView,safetyView].forEach(node=>node.classList.add('hidden'));
   view.classList.remove('hidden');
-  currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':view===safetyView?'safety':'home';
+  currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':view===safetyView?'safety':view===onboardingView?'onboarding':'home';
 }
 
 function addMessage(kind,text) {
@@ -59,6 +66,14 @@ function persist(view=currentView) {
     summaryDraft:summaryText.value
   });
   refreshResumePanel();
+}
+
+function hasAcknowledgedTest() {
+  return Boolean(loadAcknowledgement());
+}
+
+function landingView() {
+  return hasAcknowledgedTest() ? home : onboardingView;
 }
 
 function depthName(depth) {
@@ -168,11 +183,18 @@ document.querySelector('#accept-summary').addEventListener('click',()=>{
 document.querySelector('#edit-summary').addEventListener('click',()=>summaryText.focus());
 document.querySelector('#reject-summary').addEventListener('click',()=>show(conversationView));
 document.querySelector('#resume-conversation').addEventListener('click',resumeSavedConversation);
+document.querySelector('#acknowledge-test').addEventListener('click',()=>{
+  saveAcknowledgement();
+  show(home);
+  refreshResumePanel();
+});
+document.querySelector('#onboarding-privacy').addEventListener('click',()=>show(privacyView));
+document.querySelector('#review-onboarding').addEventListener('click',()=>show(onboardingView));
 document.querySelector('#open-privacy').addEventListener('click',()=>show(privacyView));
 document.querySelector('#privacy-link').addEventListener('click',()=>show(privacyView));
 document.querySelector('#privacy-back').addEventListener('click',()=>{
-  show(home);
-  refreshResumePanel();
+  show(landingView());
+  if(hasAcknowledgedTest()) refreshResumePanel();
 });
 document.querySelectorAll('[data-urgent-help]').forEach(button=>{
   button.addEventListener('click',showUrgentHelp);
@@ -181,8 +203,8 @@ document.querySelector('#safety-back').addEventListener('click',()=>{
   if(session) {
     show(conversationView);
   } else {
-    show(home);
-    refreshResumePanel();
+    show(landingView());
+    if(hasAcknowledgedTest()) refreshResumePanel();
   }
 });
 document.querySelector('#new-conversation').addEventListener('click',forgetConversation);
@@ -197,7 +219,12 @@ window.addEventListener('pagehide',()=>{
   if(currentView==='conversation' || currentView==='summary') persist(currentView);
 });
 
-refreshResumePanel();
+if(hasAcknowledgedTest()) {
+  show(home);
+  refreshResumePanel();
+} else {
+  show(onboardingView);
+}
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./service-worker.js').catch(()=>{});

@@ -72,3 +72,11 @@ button.danger { color:#8a3434; border-color:#d8aaaa; }
 .safety-resource { display:flex; justify-content:space-between; gap:1rem; align-items:center; padding:.85rem 1rem; border:1px solid #e1c2c2; border-radius:14px; background:#fffafa; }
 .safety-resource span { color:var(--muted); }
 .safety-resource strong { white-space:nowrap; }
+
+.ack-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; margin:1rem 0; }
+.ack-grid article { border:1px solid var(--border); border-radius:16px; padding:1rem; background:#f8fbfa; }
+.ack-grid p { margin:.4rem 0 0; color:var(--muted); line-height:1.45; }
+.onboarding-secondary { display:grid; gap:.55rem; margin-top:.65rem; }
+@media (max-width:560px) {
+  .ack-grid { grid-template-columns:1fr; }
+}
