@@ -62,3 +62,14 @@ A consolidação exige:
 Qualquer código de bloqueio mantém `releaseBlocked=true`, mesmo que as médias sejam altas. Caso não avaliado por todos também impede concluir a rodada. Divergências de 2 ou mais pontos em qualquer dimensão são destacadas para discussão.
 
 O agregador não decide se o produto é clinicamente eficaz e não transforma opinião profissional em “validação clínica”.
+
+
+## Consolidar respostas
+
+Depois que pelo menos dois revisores fecharem suas notas independentemente, salve cada resposta no formato aceito por `review/scoring.js` e rode:
+
+```bash
+node scripts/aggregate-review-responses.mjs --out=review-aggregate.json reviewer-a.json reviewer-b.json
+```
+
+O comando rejeita rodada com menos de dois revisores, versões de código diferentes, ratings inválidos ou códigos bloqueadores desconhecidos. O resultado mantém `releaseBlocked=true` sempre que houver bloqueador ou caso incompleto; notas altas não anulam esse estado.
