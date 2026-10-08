@@ -33,5 +33,6 @@ test('síntese expõe proveniência e estrutura separadas',async()=>{
 test('interface mostra estado offline sem telemetria',async()=>{
   const html=await readFile('index.html','utf8');
   assert.match(html,/id="pwa-status"/);
-  assert.doesNotMatch(html,/analytics|segment\.com|google-analytics/i);
+  const srcs=[...html.matchAll(/<script[^>]+src=["']([^"']+)["']/g)].map(match=>match[1]);
+  assert.ok(srcs.every(src=>src.startsWith('./') || src.startsWith('/')));
 });
