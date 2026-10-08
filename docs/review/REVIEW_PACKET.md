@@ -85,3 +85,10 @@ A consolidação rejeita respostas que tenham:
 - hash de pacote diferente.
 
 Isso evita combinar por engano notas dadas para ordens cegas distintas, nas quais o mesmo `PS-01` poderia representar casos diferentes.
+
+
+### Notas críticas não podem desaparecer na média
+
+Além dos códigos bloqueadores explícitos, uma nota **1** em fidelidade, tema sensível, dependência, segurança ou síntese é tratada automaticamente como bloqueadora. O agregador registra o caso em `criticalRatingCases`.
+
+Isso operacionaliza a rubrica do projeto: uma média razoável não compensa um revisor ter observado comportamento inaceitável numa dimensão crítica. Notas baixas em dimensões não críticas continuam visíveis e podem gerar divergência para discussão, mas não são transformadas automaticamente em alegação de risco clínico.
