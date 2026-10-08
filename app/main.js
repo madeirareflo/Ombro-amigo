@@ -46,6 +46,7 @@ const adultConfirm=$('#adult-confirm');
 const acknowledgeButton=$('#acknowledge-test');
 const pwaStatus=$('#pwa-status');
 const persistStatus=$('#persist-status');
+const refreshAppStatus=$('#refresh-app-status');
 
 let session=null;
 let currentView='onboarding';
@@ -377,6 +378,40 @@ function updatePwaStatus(){
   pwaStatus.textContent=navigator.serviceWorker?.controller?'Pronto para uso offline':'Online';
 }
 
+async function refreshApplicationShell(){
+  if(!navigator.onLine){
+    refreshAppStatus.textContent='Conecte-se à internet para buscar a versão mais recente.';
+    return;
+  }
+
+  refreshAppStatus.textContent='Limpando o cache do aplicativo…';
+  try{
+    if(currentView==='conversation'||currentView==='summary') await persist(currentView);
+
+    if('serviceWorker' in navigator){
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration=>registration.unregister()));
+    }
+
+    if('caches' in window){
+      const keys=await caches.keys();
+      await Promise.all(
+        keys
+          .filter(key=>key.startsWith('ombro-amigo-'))
+          .map(key=>caches.delete(key))
+      );
+    }
+
+    refreshAppStatus.textContent='Buscando a versão mais recente…';
+    const target=new URL(window.location.href);
+    target.searchParams.set('refresh',Date.now().toString());
+    window.location.replace(target.toString());
+  }catch{
+    refreshAppStatus.textContent='Não foi possível limpar todo o cache. Tentando recarregar mesmo assim…';
+    window.location.reload();
+  }
+}
+
 document.querySelectorAll('[data-start]').forEach(button=>button.addEventListener('click',()=>start(button.dataset.start)));
 
 document.querySelectorAll('input[name="depth"]').forEach(input=>input.addEventListener('change',()=>{
@@ -514,6 +549,11 @@ $('#copy-summary').addEventListener('click',async()=>{
   }
 });
 
+$('#refresh-app').addEventListener('click',()=>{
+  if(!confirm('Atualizar os arquivos do aplicativo agora? Sua conversa salva neste aparelho será preservada.')) return;
+  void refreshApplicationShell();
+});
+
 $('#persist-storage').addEventListener('click',async()=>{
   if(!navigator.storage?.persist){
     persistStatus.textContent='Este navegador não oferece essa opção.';
@@ -537,6 +577,13 @@ window.addEventListener('online',updatePwaStatus);
 window.addEventListener('offline',updatePwaStatus);
 
 async function bootstrap(){
+  const currentUrl=new URL(window.location.href);
+  if(currentUrl.searchParams.has('refresh')){
+    currentUrl.searchParams.delete('refresh');
+    const clean=currentUrl.pathname+currentUrl.search+currentUrl.hash;
+    window.history.replaceState(null,'',clean);
+  }
+
   await initializeConversationStorage();
   if(hasAcknowledgedTest()){
     show(home,{focusEntry:false});
@@ -549,8 +596,8 @@ async function bootstrap(){
 
 void bootstrap();
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./service-worker.js')
-    .then(()=>navigator.serviceWorker.ready)
+  navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'})
+    .then(registration=>registration.update().then(()=>navigator.serviceWorker.ready))
     .then(updatePwaStatus)
     .catch(()=>{pwaStatus.textContent='Online · modo offline indisponível';});
 }
