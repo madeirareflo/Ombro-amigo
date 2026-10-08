@@ -42,6 +42,10 @@ O arquivo `tests/research/summary-fidelity-corpus.json` contém somente históri
 node scripts/generate-summary-fidelity-report.mjs --out=summary-fidelity-report.json
 ```
 
+O relatório inclui o SHA da versão avaliada e um SHA-256 do corpus sintético. Por padrão o script usa `git rev-parse HEAD`; fora de um checkout Git, use `--sha=<commit>`. O comando falha se não conseguir vincular a execução a uma versão rastreável.
+
+O hash do corpus ajuda a confirmar que dois relatórios usaram o mesmo material de entrada. Ele não substitui assinatura digital nem protege contra substituição simultânea do relatório e do arquivo de origem.
+
 O relatório deve ser tratado como evidência de rastreabilidade textual, não como uma nota de “qualidade clínica”.
 
 ## Evolução

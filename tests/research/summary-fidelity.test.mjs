@@ -5,6 +5,11 @@ import {
   simulateSummaryGroundingCase,
   aggregateGroundingAudits
 } from '../../research/summary-fidelity.js';
+import {
+  buildResearchMetadata,
+  normalizeSourceSha,
+  sha256Text
+} from '../../research/report-metadata.js';
 
 const corpus=JSON.parse(await readFile(new URL('./summary-fidelity-corpus.json',import.meta.url),'utf8'));
 
@@ -77,4 +82,23 @@ test('agregação conta ocorrências, não apenas textos únicos sem suporte',()
   ]);
   assert.equal(aggregate.totalUnsupported,2);
   assert.equal(aggregate.unsupportedClaimRate,2/3);
+});
+
+
+test('metadata do relatório fixa SHA da versão e hash do corpus',()=>{
+  const raw=JSON.stringify(corpus);
+  const metadata=buildResearchMetadata({
+    sourceSha:'9d9af3533a9d64f1277c0b27f39d6df286c83599',
+    corpusRaw:raw,
+    generatedAt:'2026-10-08T18:30:00.000Z'
+  });
+  assert.equal(metadata.sourceSha,'9d9af3533a9d64f1277c0b27f39d6df286c83599');
+  assert.equal(metadata.corpusSha256,sha256Text(raw));
+  assert.equal(metadata.generatedAt,'2026-10-08T18:30:00.000Z');
+});
+
+test('relatório rejeita referência de versão que não seja SHA',()=>{
+  assert.equal(normalizeSourceSha('ABCDEF1'),'abcdef1');
+  assert.throws(()=>normalizeSourceSha('main'));
+  assert.throws(()=>normalizeSourceSha(''));
 });
