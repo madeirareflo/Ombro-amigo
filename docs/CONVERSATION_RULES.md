@@ -4,6 +4,46 @@
 
 **Perguntar mais; concluir menos.**
 
+A próxima pergunta deve responder ao que a pessoa acabou de dizer. O motor não deve seguir um questionário fixo quando já existe informação suficiente para escolher um caminho mais proporcional.
+
+## Como a adaptação funciona
+
+A versão inicial é deliberadamente determinística. Ela observa apenas sinais superficiais presentes no texto declarado pela própria pessoa, por exemplo:
+
+- "não sei" ou dificuldade de explicar;
+- referência explícita ao corpo;
+- referência explícita a pensamentos;
+- emoção nomeada pela própria pessoa;
+- relação ou interação com alguém;
+- autojulgamento;
+- dificuldade de começar ou continuar um assunto.
+
+Esses sinais **não são diagnósticos nem inferências clínicas**. Eles servem somente para selecionar a próxima pergunta de esclarecimento.
+
+### Exemplo
+
+Se a pessoa diz:
+
+> "Sinto um aperto no peito."
+
+O motor pode perguntar:
+
+> "Você percebe quando isso aparece no corpo com mais força?"
+
+Ele não deve concluir:
+
+> "Isso é ansiedade."
+
+## Profundidade escolhida pelo usuário
+
+A profundidade controla o quanto a conversa insiste antes de oferecer uma síntese.
+
+- **Só quero começar:** poucas perguntas e baixa exigência.
+- **Posso falar um pouco:** pede exemplos e contexto quando útil.
+- **Quero organizar isso a fundo:** permite ordenar acontecimentos e explorar o que está difícil de dizer.
+
+Mesmo no modo mais profundo, o usuário pode encerrar a exploração e pedir uma síntese a qualquer momento.
+
 ## O sistema pode
 
 - pedir esclarecimentos;
@@ -26,37 +66,11 @@
 - enviar conteúdo automaticamente;
 - esconder conteúdo do paciente em um painel profissional.
 
-## Tipos de informação
-
-### Declarado
-
-"Eu estava com raiva."
-
-Pode ser registrado como emoção declarada.
-
-### Comportamento
-
-"Parei de falar com ele."
-
-Pode ser descrito sem atribuição automática de causa.
-
-### Hipótese
-
-"Talvez eu tenha ficado decepcionado."
-
-Pode ser retomada como pergunta, não como conclusão.
-
-### Interpretação clínica
-
-"Isso demonstra dependência emocional."
-
-Não deve ser produzida autonomamente.
-
 ## Contradições
 
 Contradição não é evidência de traço psicológico.
 
-Preferir perguntas que reconheçam a coexistência de duas experiências sem concluir por um diagnóstico.
+Preferir perguntas que reconheçam a coexistência de experiências sem concluir por um diagnóstico.
 
 ## Síntese
 
