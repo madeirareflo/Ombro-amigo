@@ -27,6 +27,19 @@ function count(value,label){
   return number;
 }
 
+function booleanOrNull(value,label){
+  if(value==null) return null;
+  if(typeof value!=='boolean') throw new Error(label+' must be boolean or null');
+  return value;
+}
+
+function fidelityRating(value){
+  if(value==null || value==='') return 'not-rated';
+  const normalized=String(value);
+  if(!FIDELITY_RATING.has(normalized)) throw new Error('invalid fidelity rating');
+  return normalized;
+}
+
 function codeList(values,label){
   if(values==null) return [];
   if(!Array.isArray(values)) throw new Error(label+' must be an array');
@@ -64,10 +77,10 @@ export function createPilotMetrics(input={}){
     startedAt,
     tasks:tasks(input.tasks),
     roleComprehension:{
-      appDiagnoses:input.roleComprehension?.appDiagnoses ?? null,
-      sendsAutomatically:input.roleComprehension?.sendsAutomatically ?? null,
-      userControlsDraft:input.roleComprehension?.userControlsDraft ?? null,
-      replacesCrisisCare:input.roleComprehension?.replacesCrisisCare ?? null
+      appDiagnoses:booleanOrNull(input.roleComprehension?.appDiagnoses,'appDiagnoses'),
+      sendsAutomatically:booleanOrNull(input.roleComprehension?.sendsAutomatically,'sendsAutomatically'),
+      userControlsDraft:booleanOrNull(input.roleComprehension?.userControlsDraft,'userControlsDraft'),
+      replacesCrisisCare:booleanOrNull(input.roleComprehension?.replacesCrisisCare,'replacesCrisisCare')
     },
     autonomy:{
       canStop:rating(input.autonomy?.canStop),
@@ -76,7 +89,7 @@ export function createPilotMetrics(input={}){
       noPressure:rating(input.autonomy?.noPressure)
     },
     fidelity:{
-      rating:FIDELITY_RATING.has(input.fidelity?.rating) ? input.fidelity.rating : 'not-rated',
+      rating:fidelityRating(input.fidelity?.rating),
       unsupportedItemCount:count(input.fidelity?.unsupportedItemCount,'unsupportedItemCount'),
       distortedItemCount:count(input.fidelity?.distortedItemCount,'distortedItemCount'),
       correctionCount:count(input.fidelity?.correctionCount,'correctionCount')
