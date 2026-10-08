@@ -64,9 +64,11 @@ service-worker.js     cache offline mínimo
 
 ## Privacidade no MVP
 
-Todo o conteúdo fica no navegador do próprio dispositivo usando armazenamento local. Não existe servidor, conta, sincronização ou painel do psicólogo nesta primeira versão.
+Todo o conteúdo da conversa fica no navegador do próprio dispositivo usando armazenamento local. Não existe servidor, conta, sincronização, analytics, pixel de rastreamento ou painel do psicólogo nesta primeira versão.
 
-Isso **não deve ser confundido com armazenamento criptografado de produção**. A criptografia local e o compartilhamento autorizado com o profissional entram em uma etapa posterior.
+A página também declara uma Content Security Policy com `connect-src 'none'`, bloqueando conexões iniciadas pelo aplicativo via fetch/XHR/WebSocket. O GitHub Pages serve somente os arquivos estáticos do app; não há endpoint no projeto para receber o texto digitado.
+
+O usuário pode apagar o estado local a qualquer momento. Isso **não deve ser confundido com armazenamento criptografado de produção**: a criptografia local é uma etapa posterior.
 
 ## Aviso
 
