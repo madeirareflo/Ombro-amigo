@@ -4,54 +4,174 @@ const START_QUESTIONS = {
   feeling: 'Você percebe isso mais nos pensamentos, no corpo, na vontade de fazer as coisas ou nas relações com outras pessoas?'
 };
 
-const DEPTH_PROMPTS = {
+const DEPTH_LIMITS = {
+  light: 2,
+  medium: 4,
+  deep: 6
+};
+
+const GENERIC_FALLBACKS = {
   light: [
-    'Se você tivesse que escolher uma palavra aproximada para isso, qual seria?',
-    'Tem alguma parte que você gostaria de conseguir dizer na próxima sessão?'
+    'Quer escolher só uma parte disso para organizar agora?',
+    'O que seria mais útil conseguir dizer sobre isso na próxima sessão?'
   ],
   medium: [
-    'Você consegue lembrar de uma situação concreta em que isso apareceu?',
-    'O que você pensou naquele momento?',
-    'Que emoção você reconhece com mais segurança, mesmo que não explique tudo?'
+    'Você consegue dar um exemplo concreto do que aconteceu?',
+    'O que ficou mais difícil de explicar nessa situação?',
+    'O que você gostaria que seu psicólogo entendesse primeiro?'
   ],
   deep: [
-    'Vamos por partes: o que aconteceu primeiro?',
-    'Depois disso, o que você percebeu em você?',
-    'O que ficou mais difícil de dizer ou fazer?',
-    'Existe algo que você teme que seu psicólogo pense quando ouvir isso?'
+    'Vamos ordenar isso: o que aconteceu primeiro?',
+    'O que você percebeu em você logo depois?',
+    'O que ficou por dizer naquele momento?',
+    'O que você teme que aconteça quando esse assunto for colocado em palavras?'
   ]
 };
 
+const SIGNALS = [
+  {
+    key: 'uncertainty',
+    pattern: /^(não sei|nao sei|sei lá|sei la|difícil dizer|dificil dizer|não consigo explicar|nao consigo explicar)[.!]?$/i,
+    questions: [
+      'Tudo bem não saber ainda. Isso parece mais algo no corpo, nos pensamentos, na vontade de fazer coisas ou nas relações?',
+      'Sem precisar explicar o motivo: isso ficou mais leve, mais pesado ou parecido com antes?'
+    ]
+  },
+  {
+    key: 'body',
+    pattern: /(corpo|coração|coracao|peito|respiração|respiracao|tremor|tenso|tensa|cansaço|cansaco|dor|sono|apetite)/i,
+    questions: [
+      'Você percebe quando isso aparece no corpo com mais força?',
+      'O que estava acontecendo ao redor quando você notou essa sensação no corpo?'
+    ]
+  },
+  {
+    key: 'thought',
+    pattern: /(pensei|pensando|pensamento|imagino|imaginei|acho que|minha cabeça|na minha cabeça)/i,
+    questions: [
+      'Qual pensamento aparece com mais frequência quando isso acontece?',
+      'Esse pensamento surge mais antes, durante ou depois da situação que você quer contar?'
+    ]
+  },
+  {
+    key: 'emotion',
+    pattern: /(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)/i,
+    questions: [
+      'O que estava acontecendo quando você percebeu essa emoção?',
+      'Essa palavra representa bem o que você sentiu ou só chega perto?'
+    ]
+  },
+  {
+    key: 'relationship',
+    pattern: /(namorado|namorada|marido|esposa|parceiro|parceira|mãe|mae|pai|irmão|irmao|irmã|irma|amigo|amiga|colega|família|familia|relacionamento)/i,
+    questions: [
+      'Qual foi a parte dessa interação que ficou mais difícil de levar para a sessão?',
+      'Tem alguma frase ou reação dessa pessoa que ficou especialmente marcada para você?'
+    ]
+  },
+  {
+    key: 'selfJudgment',
+    pattern: /(sou ridículo|sou ridicula|sou ridículo|sou idiota|sou horrível|sou horrivel|sou fraco|sou fraca|que vergonha de mim)/i,
+    questions: [
+      'O que aconteceu para você acabar se descrevendo desse jeito?',
+      'Se tirarmos o rótulo por um momento, qual fato ou situação você gostaria de conseguir contar?'
+    ]
+  },
+  {
+    key: 'avoidance',
+    pattern: /(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei)/i,
+    questions: [
+      'O que parece mais difícil: começar o assunto, continuar depois de começar ou lidar com a reação da outra pessoa?',
+      'Se você pudesse dizer só a primeira frase na sessão, o que gostaria que ela comunicasse?'
+    ]
+  }
+];
+
 export function createConversation({ mode, depth = 'light' }) {
-  return { mode, depth, turn: 0, entries: [], lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session };
+  return {
+    mode,
+    depth,
+    turn: 0,
+    entries: [],
+    usedQuestions: [],
+    lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session
+  };
 }
 
 export function openingQuestion(state) {
+  markQuestionUsed(state, state.lastQuestion);
   return state.lastQuestion;
 }
 
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
-  state.entries.push({ kind: 'user_statement', text, source: 'declared' });
-  const prompts = DEPTH_PROMPTS[state.depth] || DEPTH_PROMPTS.light;
-  const question = prompts[Math.min(state.turn, prompts.length - 1)];
+
+  state.entries.push({
+    kind: 'user_statement',
+    text,
+    source: 'declared'
+  });
+
+  const question = chooseAdaptiveQuestion(state, text);
   state.turn += 1;
   state.lastQuestion = question;
+  markQuestionUsed(state, question);
   return question;
+}
+
+export function chooseAdaptiveQuestion(state, answer) {
+  const text = String(answer || '').trim();
+  const matchedSignal = SIGNALS.find(signal => signal.pattern.test(text));
+
+  if (matchedSignal) {
+    const candidate = firstUnused(state, matchedSignal.questions);
+    if (candidate) return candidate;
+  }
+
+  const fallbackPool = GENERIC_FALLBACKS[state.depth] || GENERIC_FALLBACKS.light;
+  const fallback = firstUnused(state, fallbackPool);
+  if (fallback) return fallback;
+
+  const limit = DEPTH_LIMITS[state.depth] || DEPTH_LIMITS.light;
+  if (state.turn >= limit) {
+    return 'Já temos material suficiente para montar um primeiro rascunho. Quer usar “Me ajuda a dizer isso” ou prefere acrescentar mais alguma coisa?';
+  }
+
+  return 'O que você considera mais importante registrar disso, sem precisar explicar tudo agora?';
 }
 
 export function buildSummary(state) {
   const statements = state.entries.map(item => item.text).filter(Boolean);
+
   if (!statements.length) {
     return 'Ainda não há conteúdo suficiente para montar uma síntese. Você pode continuar a conversa ou escrever com suas próprias palavras.';
   }
+
   const recent = statements.slice(-4);
-  const body = recent.map((text,index) => `${index===0?'Quero falar sobre':'Também percebi que'} ${normalizeSentence(text)}`);
-  return ['Rascunho em primeira pessoa:','',body.join('\n'),'','Quero levar isso para a sessão sem precisar explicar tudo de uma vez.'].join('\n');
+  const body = recent.map((text, index) =>
+    `${index === 0 ? 'Quero falar sobre' : 'Também quero contar que'} ${normalizeSentence(text)}`
+  );
+
+  return [
+    'Rascunho em primeira pessoa:',
+    '',
+    body.join('\n'),
+    '',
+    'Quero levar isso para a sessão sem precisar explicar tudo de uma vez.'
+  ].join('\n');
+}
+
+function firstUnused(state, questions) {
+  return questions.find(question => !state.usedQuestions.includes(question)) || null;
+}
+
+function markQuestionUsed(state, question) {
+  if (!Array.isArray(state.usedQuestions)) state.usedQuestions = [];
+  if (!state.usedQuestions.includes(question)) state.usedQuestions.push(question);
 }
 
 function normalizeSentence(text) {
   const trimmed = text.trim();
   if (!trimmed) return '';
-  return trimmed.charAt(0).toLowerCase()+trimmed.slice(1).replace(/[.!?]+$/,'')+'.';
+  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1).replace(/[.!?]+$/, '') + '.';
 }
