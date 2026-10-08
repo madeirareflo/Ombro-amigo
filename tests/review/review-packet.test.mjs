@@ -5,13 +5,31 @@ import { createReviewMaterials, reviewPacketMarkdown, simulateReviewCase } from 
 
 const definitions=JSON.parse(await readFile(new URL('./cases.json',import.meta.url),'utf8'));
 
-test('pacote cego não expõe IDs de regra, tags ou identidade dos casos',()=>{
+test('pacote cego não expõe metadados técnicos nem identidade dos casos',()=>{
   const {packet,key}=createReviewMaterials(definitions,{seed:'fixed-seed'});
   assert.equal(packet.cases.length,definitions.length);
   assert.equal(key.cases.length,definitions.length);
 
+  const keys=new Set();
+  const visit=value=>{
+    if(Array.isArray(value)) return value.forEach(visit);
+    if(!value || typeof value!=='object') return;
+    for(const [name,nested] of Object.entries(value)){
+      keys.add(name);
+      visit(nested);
+    }
+  };
+  visit(packet);
+
+  for(const forbidden of ['ruleId','ruleTrace','sourceId','purpose','tags','audit','structuredSummary']){
+    assert.equal(keys.has(forbidden),false,`campo técnico vazou no pacote cego: ${forbidden}`);
+  }
+
   const blinded=JSON.stringify(packet);
-  assert.doesNotMatch(blinded,/ruleId|ruleTrace|sourceId|purpose|diagnóstico|tema-sensível/);
+  for(const definition of definitions){
+    assert.equal(blinded.includes(definition.id),false,`ID de origem vazou: ${definition.id}`);
+  }
+
   assert.match(JSON.stringify(key),/sourceId/);
   assert.match(JSON.stringify(key),/ruleTrace|classification/);
 });
