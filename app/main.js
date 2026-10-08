@@ -1,4 +1,4 @@
-import { createConversation, openingQuestion, nextQuestion, skipQuestion, buildStructuredSummary } from '../conversation/engine.js';
+import { createConversation, openingQuestion, nextQuestion, skipQuestion, buildStructuredSummary, detectConversationControlIntent } from '../conversation/engine.js';
 import {
   saveAcknowledgement,
   loadAcknowledgement,
@@ -423,15 +423,24 @@ replyForm.addEventListener('submit',event=>{
   event.preventDefault();
   const text=reply.value.trim();
   if(!text||!session) return;
-  addMessage('user',text);
   reply.value='';
 
   const safety=assessSafety({explicitImmediateDanger:detectExplicitImmediateDanger(text)});
   if(safety.interrupt){
+    addMessage('user',text);
     showUrgentHelp(safety.message);
     return;
   }
 
+  const controlIntent=detectConversationControlIntent(text);
+  if(controlIntent==='summary'){
+    createOrRestoreSummary();
+    show(summaryView);
+    void persist('summary');
+    return;
+  }
+
+  addMessage('user',text);
   const question=nextQuestion(session,text);
   addMessage('ai',question);
   void persist('conversation');

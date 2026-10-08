@@ -72,6 +72,36 @@ const BOUNDARY_RULES = [
 const SENSITIVE_TOPIC_PATTERN = /\b(abuso|abusado|abusada|violência|violencia|estupro|agressão|agressao|assédio|assedio|luto|falecimento|morreu|morte|trauma|traumático|traumatica|traumática)\b/i;
 const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|difícil dizer|dificil dizer|não consigo explicar|nao consigo explicar|não sei o que sinto|nao sei o que sinto)[.!]?$/i;
 
+const CONTROL_INTENTS = [
+  {
+    key:'clarify',
+    ruleId:'CONV-CLARIFY-01',
+    pattern:/^(como assim|não entendi|nao entendi|o que você quer dizer|o que voce quer dizer|pode explicar|explica melhor|não ficou claro|nao ficou claro)[?!.\s]*$/i
+  },
+  {
+    key:'continue',
+    ruleId:'AUTONOMY-CONTINUE-01',
+    pattern:/^(continuar|continuar explorando|quero continuar|vamos continuar|pode continuar|seguir|quero explorar mais)[?!.\s]*$/i
+  },
+  {
+    key:'summary',
+    ruleId:'AUTONOMY-SUMMARY-01',
+    pattern:/^(me (?:ajuda|ajude) a dizer isso|me ajuda a falar disso|montar síntese|montar sintese|fazer síntese|fazer sintese|quero uma síntese|quero uma sintese|ir para a síntese|ir para a sintese)[?!.\s]*$/i
+  }
+];
+
+const CONTINUATION_QUESTIONS = {
+  light:[
+    'Vamos continuar. Do que você já contou, qual parte você quer olhar um pouco mais antes de montar a síntese?'
+  ],
+  medium:[
+    'Vamos continuar. O que ainda ficou faltando para seu psicólogo entender o que você quer levar dessa situação?'
+  ],
+  deep:[
+    'Vamos continuar sem concluir por você. O que ainda parece importante colocar em palavras antes da síntese?'
+  ]
+};
+
 const SIGNALS = [
   {
     key: 'uncertainty',
@@ -103,7 +133,7 @@ const SIGNALS = [
   {
     key: 'emotion',
     ruleId: 'CONV-REFLECT-01',
-    pattern: /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)\b/i,
+    pattern: /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i,
     questions: [
       'Você nomeou uma emoção para essa experiência. O que estava acontecendo quando ela apareceu?',
       'Você já encontrou uma palavra para parte do que sentiu. Essa palavra representa bem a experiência ou só chega perto?'
@@ -164,24 +194,40 @@ export function openingQuestion(state) {
 
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
+  const controlIntent = detectConversationControlIntent(text);
 
   state.skips = 0;
-  state.entries.push({
-    kind: 'user_statement',
-    text,
-    source: 'declared',
-    categories: classifyDeclaredContent(text)
-  });
+  if (!controlIntent) {
+    state.entries.push({
+      kind: 'user_statement',
+      text,
+      source: 'declared',
+      categories: classifyDeclaredContent(text)
+    });
+  }
 
   if (!Array.isArray(state.transcript)) state.transcript = [];
-  state.transcript.push({ role: 'user', text });
+  state.transcript.push({
+    role: 'user',
+    text,
+    ...(controlIntent ? { meta: 'control:'+controlIntent } : {})
+  });
 
-  const turn = state.mode === 'record'
-    ? {
-        text: 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.',
-        ruleId: 'CONV-START-01'
-      }
-    : chooseAdaptiveTurn(state, text);
+  const turn = controlIntent === 'clarify'
+    ? clarificationTurn(state)
+    : controlIntent === 'continue'
+      ? continuationTurn(state)
+      : controlIntent === 'summary'
+        ? {
+            text: 'Certo. Vou usar apenas o que você já escreveu para montar uma síntese editável.',
+            ruleId: 'AUTONOMY-SUMMARY-01'
+          }
+        : state.mode === 'record'
+          ? {
+              text: 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.',
+              ruleId: 'CONV-START-01'
+            }
+          : chooseAdaptiveTurn(state, text);
 
   state.turn += 1;
   state.lastQuestion = turn.text;
@@ -215,6 +261,52 @@ export function skipQuestion(state) {
   return question;
 }
 
+export function detectConversationControlIntent(answer) {
+  const text = String(answer || '').trim();
+  return CONTROL_INTENTS.find(intent=>intent.pattern.test(text))?.key || null;
+}
+
+function clarificationTurn(state) {
+  const lastQuestion=String(state.lastQuestion || '');
+
+  if (/prefere falar do que aconteceu|continuar explorando|montar uma síntese|parar por hoje/i.test(lastQuestion)) {
+    return {
+      text: 'Quero dizer que você pode escolher o caminho agora: continuar falando do que aconteceu ou de como isso ficou em você, montar uma síntese com o que já contou, ou parar por aqui.',
+      ruleId: 'CONV-CLARIFY-01'
+    };
+  }
+
+  if (/parte mais importante de registrar/i.test(lastQuestion)) {
+    return {
+      text: 'Quero dizer: qual pedaço disso você mais quer guardar ou conseguir contar na sessão? Não precisa explicar tudo.',
+      ruleId: 'CONV-CLARIFY-01'
+    };
+  }
+
+  return {
+    text: 'Posso colocar de um jeito mais simples: qual parte do que estamos falando você quer continuar explorando agora? Pode ser o que aconteceu, o que você sentiu ou algo que queira levar para a sessão.',
+    ruleId: 'CONV-CLARIFY-01'
+  };
+}
+
+function continuationTurn(state) {
+  const recent=[...(state.entries || [])]
+    .reverse()
+    .find(item=>item?.text && !item.categories?.some(category=>['control','question','uncertainty'].includes(category)));
+
+  if (recent) {
+    const matchedSignal=SIGNALS.find(signal=>signal.pattern.test(recent.text));
+    if (matchedSignal) {
+      const candidate=firstUnused(state,matchedSignal.questions);
+      if (candidate) return { text:candidate, ruleId:matchedSignal.ruleId };
+    }
+  }
+
+  const pool=CONTINUATION_QUESTIONS[state.depth] || CONTINUATION_QUESTIONS.light;
+  const candidate=firstUnused(state,pool) || pool[0];
+  return { text:candidate, ruleId:'AUTONOMY-CONTINUE-01' };
+}
+
 export function chooseAdaptiveTurn(state, answer) {
   const text = String(answer || '').trim();
 
@@ -235,13 +327,42 @@ export function chooseAdaptiveTurn(state, answer) {
     };
   }
 
+  // Prioriza detalhes declarados, sem atribuir significado clínico a eles.
+  if (/\b(mundo|ambiente|ao redor|luz|claro|clara|colorido|colorida|cores)\b/i.test(text) && /\b(assusta|assustado|assustada|medo|estranho|estranha)\b/i.test(text)) {
+    const options=[
+      'Você descreveu uma mudança em como percebe o ambiente e disse que isso às vezes assusta. Quer registrar quando percebe isso ou como é para você?',
+      'Sem precisar explicar a causa, o que gostaria que seu psicólogo soubesse sobre essa experiência?'
+    ];
+    const candidate=firstUnused(state,options);
+    if(candidate) return {text:candidate,ruleId:'CONV-REFLECT-01'};
+  }
+
+  // Resposta curta à pergunta inicial: não trata "tudo isso" como fato clínico.
+  if (/^(em\s+)?tudo\s+isso[.!?]*$/i.test(text) || /^em\s+todas\s+(essas\s+)?áreas[.!?]*$/i.test(text)) {
+    return {
+      text: 'Entendi: você percebe isso em mais de uma dessas áreas. Quer escolher uma parte para registrar primeiro, ou prefere contar do seu jeito?',
+      ruleId: 'CONV-REFLECT-01'
+    };
+  }
+
+  // Reflexão ancorada nos termos que a pessoa realmente usou.
+  if (/\b(mundo|ambiente|ao redor|colorido|colorida|cores)\b/i.test(text) && /\b(felicidade|feliz)\b/i.test(text)) {
+    const options=[
+      'Você descreveu o mundo como mais colorido e também mencionou uma sensação de felicidade. O que gostaria de registrar sobre essa experiência?',
+      'Quando fala dessa sensação de felicidade, como gostaria de explicá-la na sessão, com suas próprias palavras?'
+    ];
+    const candidate=firstUnused(state,options);
+    if(candidate) return { text:candidate,ruleId:'CONV-REFLECT-01' };
+  }
+
   const matchedSignal = SIGNALS.find(signal => signal.pattern.test(text));
   if (matchedSignal) {
     const candidate = firstUnused(state, matchedSignal.questions);
     if (candidate) return { text: candidate, ruleId: matchedSignal.ruleId };
   }
 
-  if ((Number(state.turn || 0) + 1) % 3 === 0) {
+  const checkpointAlreadyShown = (state.ruleHistory || []).some(entry=>entry.ruleId==='AUTONOMY-CHECKPOINT-01');
+  if (!checkpointAlreadyShown && (Number(state.turn || 0) + 1) % 3 === 0) {
     return {
       text: 'Já apareceu material suficiente para você escolher o próximo passo. Você prefere continuar explorando, montar uma síntese agora ou parar por hoje?',
       ruleId: 'AUTONOMY-CHECKPOINT-01'
@@ -249,7 +370,7 @@ export function chooseAdaptiveTurn(state, answer) {
   }
 
   const limit = DEPTH_LIMITS[state.depth] || DEPTH_LIMITS.light;
-  if (state.turn >= limit) {
+  if (!checkpointAlreadyShown && state.turn >= limit) {
     return {
       text: 'Já temos material suficiente para montar um primeiro rascunho. Você prefere usar “Me ajuda a dizer isso” ou acrescentar mais alguma coisa?',
       ruleId: 'AUTONOMY-CHECKPOINT-01'
@@ -333,8 +454,9 @@ function classifyDeclaredContent(text) {
   if (boundary?.key === 'stop' || boundary?.key === 'correction') return ['control'];
   if (boundary?.key === 'dependency') return ['difficulty'];
   if (UNCERTAINTY_PATTERN.test(value)) return ['uncertainty'];
+  if (/^(em\s+)?tudo\s+isso[.!?]*$/i.test(value) || /^em\s+todas\s+(essas\s+)?áreas[.!?]*$/i.test(value)) return ['control'];
 
-  if (/\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)\b/i.test(value)) {
+  if (/\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value)) {
     categories.push('emotion');
   }
 
