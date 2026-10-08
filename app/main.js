@@ -1,10 +1,14 @@
 import { createConversation, openingQuestion, nextQuestion, buildSummary } from '../conversation/engine.js';
 import { saveLocalState, loadLocalState, clearLocalState } from '../storage/local-store.js';
+import { urgentHelpGuidance } from '../safety/policy.js';
 
 const home=document.querySelector('#home-view');
 const conversationView=document.querySelector('#conversation-view');
 const summaryView=document.querySelector('#summary-view');
 const privacyView=document.querySelector('#privacy-view');
+const safetyView=document.querySelector('#safety-view');
+const safetyMessage=document.querySelector('#safety-message');
+const safetyResources=document.querySelector('#safety-resources');
 const messages=document.querySelector('#messages');
 const reply=document.querySelector('#reply');
 const replyForm=document.querySelector('#reply-form');
@@ -17,9 +21,9 @@ let session=null;
 let currentView='home';
 
 function show(view) {
-  [home,conversationView,summaryView,privacyView].forEach(node=>node.classList.add('hidden'));
+  [home,conversationView,summaryView,privacyView,safetyView].forEach(node=>node.classList.add('hidden'));
   view.classList.remove('hidden');
-  currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':'home';
+  currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':view===safetyView?'safety':'home';
 }
 
 function addMessage(kind,text) {
@@ -96,6 +100,29 @@ function refreshResumePanel() {
   resumeInfo.textContent=`${depthName(saved.session.depth)} · ${when} · somente neste aparelho`;
 }
 
+function showUrgentHelp() {
+  const guidance=urgentHelpGuidance('BR');
+  safetyMessage.textContent=guidance.message;
+  safetyResources.replaceChildren();
+  guidance.resources.forEach(resource=>{
+    const item=document.createElement('div');
+    item.className='safety-resource';
+    const label=document.createElement('span');
+    label.textContent=resource.label;
+    const value=document.createElement('strong');
+    value.textContent=resource.value;
+    item.append(label,value);
+    safetyResources.appendChild(item);
+  });
+  if(guidance.outside) {
+    const note=document.createElement('p');
+    note.className='muted small';
+    note.textContent=guidance.outside;
+    safetyResources.appendChild(note);
+  }
+  show(safetyView);
+}
+
 function forgetConversation() {
   clearLocalState();
   session=null;
@@ -146,6 +173,17 @@ document.querySelector('#privacy-link').addEventListener('click',()=>show(privac
 document.querySelector('#privacy-back').addEventListener('click',()=>{
   show(home);
   refreshResumePanel();
+});
+document.querySelectorAll('[data-urgent-help]').forEach(button=>{
+  button.addEventListener('click',showUrgentHelp);
+});
+document.querySelector('#safety-back').addEventListener('click',()=>{
+  if(session) {
+    show(conversationView);
+  } else {
+    show(home);
+    refreshResumePanel();
+  }
 });
 document.querySelector('#new-conversation').addEventListener('click',forgetConversation);
 document.querySelector('#delete-conversation').addEventListener('click',()=>{
