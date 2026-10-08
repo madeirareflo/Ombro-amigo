@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#315c56">
   <meta name="description" content="Ombro-amigo: apoio à organização do que você quer levar para a psicoterapia.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <title>Ombro-amigo</title>
@@ -15,7 +16,7 @@
       <strong>Ombro-amigo</strong>
       <span class="subtitle">uma ponte para a conversa</span>
     </div>
-    <span class="privacy-badge">🔒 Privado no aparelho</span>
+    <button id="open-privacy" class="privacy-badge" type="button" aria-haspopup="dialog">🔒 Privado no aparelho</button>
   </header>
 
   <main class="app-shell">
@@ -51,6 +52,8 @@
         <summary>O que esta ferramenta faz — e o que não faz</summary>
         <p>Ela ajuda a organizar o que você quer dizer. Não diagnostica, não substitui seu psicólogo e não envia nada automaticamente.</p>
       </details>
+
+      <button id="privacy-link" class="privacy-link ghost" type="button">Como seus dados ficam privados?</button>
     </section>
 
     <section id="conversation-view" class="card hidden" aria-live="polite">
@@ -79,6 +82,39 @@
         <button id="reject-summary" class="ghost">Não representa</button>
       </div>
       <p class="muted small">Nada é enviado para outra pessoa nesta versão.</p>
+    </section>
+    <section id="privacy-view" class="card hidden" aria-labelledby="privacy-title">
+      <div class="conversation-header">
+        <button id="privacy-back" class="ghost" type="button">← Voltar</button>
+        <span class="pill">Privacidade do teste</span>
+      </div>
+      <p class="eyebrow">Seus dados</p>
+      <h2 id="privacy-title">A conversa fica neste aparelho</h2>
+      <p>Esta versão não tem conta, backend, analytics, pixels ou serviço de sincronização. O texto digitado é salvo somente pelo navegador deste dispositivo.</p>
+
+      <div class="privacy-grid">
+        <article>
+          <strong>🔒 Neste aparelho</strong>
+          <p>Conversa, histórico e rascunho da síntese.</p>
+        </article>
+        <article>
+          <strong>☁️ Enviado para a internet</strong>
+          <p>Nenhum conteúdo da conversa. O site recebe apenas os arquivos estáticos necessários para abrir o aplicativo.</p>
+        </article>
+        <article>
+          <strong>👤 Disponível para o psicólogo</strong>
+          <p>Nada nesta versão. Compartilhamento ainda não foi implementado.</p>
+        </article>
+        <article>
+          <strong>🗑️ Controle do usuário</strong>
+          <p>Você pode apagar a conversa salva neste navegador a qualquer momento.</p>
+        </article>
+      </div>
+
+      <div class="privacy-note">
+        <strong>Proteção técnica adicional</strong>
+        <p>A política de segurança desta página bloqueia conexões iniciadas pelo aplicativo, como fetch, XHR e WebSocket. Nesta fase, o Ombro-amigo não possui endpoint para receber suas conversas.</p>
+      </div>
     </section>
   </main>
 
