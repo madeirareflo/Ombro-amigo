@@ -109,7 +109,8 @@ export function nextQuestion(state, answer) {
   state.entries.push({
     kind: 'user_statement',
     text,
-    source: 'declared'
+    source: 'declared',
+    categories: classifyDeclaredContent(text)
   });
 
   const question = chooseAdaptiveQuestion(state, text);
@@ -140,25 +141,92 @@ export function chooseAdaptiveQuestion(state, answer) {
   return 'O que você considera mais importante registrar disso, sem precisar explicar tudo agora?';
 }
 
-export function buildSummary(state) {
-  const statements = state.entries.map(item => item.text).filter(Boolean);
+export function buildStructuredSummary(state) {
+  const entries = state.entries.filter(item => item?.text);
 
-  if (!statements.length) {
+  if (!entries.length) {
+    return {
+      facts: [],
+      emotions: [],
+      difficulties: [],
+      sessionPoints: []
+    };
+  }
+
+  const pick = category => entries
+    .filter(item => item.categories?.includes(category))
+    .map(item => item.text);
+
+  const facts = unique(pick('fact'));
+  const emotions = unique(pick('emotion'));
+  const difficulties = unique(pick('difficulty'));
+
+  const sessionPoints = unique([
+    ...difficulties,
+    ...entries.slice(-2).map(item => item.text)
+  ]).slice(0, 3);
+
+  return { facts, emotions, difficulties, sessionPoints };
+}
+
+export function buildSummary(state) {
+  const structured = buildStructuredSummary(state);
+  const hasContent = Object.values(structured).some(items => items.length);
+
+  if (!hasContent) {
     return 'Ainda não há conteúdo suficiente para montar uma síntese. Você pode continuar a conversa ou escrever com suas próprias palavras.';
   }
 
-  const recent = statements.slice(-4);
-  const body = recent.map((text, index) =>
-    `${index === 0 ? 'Quero falar sobre' : 'Também quero contar que'} ${normalizeSentence(text)}`
-  );
-
   return [
-    'Rascunho em primeira pessoa:',
+    'Rascunho para levar à sessão:',
     '',
-    body.join('\n'),
+    section('O que aconteceu', structured.facts),
     '',
-    'Quero levar isso para a sessão sem precisar explicar tudo de uma vez.'
+    section('O que eu disse que senti', structured.emotions),
+    '',
+    section('O que está difícil de dizer', structured.difficulties),
+    '',
+    section('O que eu gostaria de levar para a sessão', structured.sessionPoints),
+    '',
+    'Revise livremente. Se alguma parte não representar você, apague ou reescreva.'
   ].join('\n');
+}
+
+function classifyDeclaredContent(text) {
+  const categories = [];
+  const value = String(text || '');
+
+  if (/\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada)\b/i.test(value)) {
+    categories.push('emotion');
+  }
+
+  if (/\b(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei|difícil falar|dificil falar|difícil dizer|dificil dizer|tenho vergonha de falar|tenho medo de contar)\b/i.test(value)) {
+    categories.push('difficulty');
+  }
+
+  if (/\b(aconteceu|ontem|hoje|semana|briguei|discuti|falei|disse|fez|fiz|terminou|começou|comecou|mensagem|conversa|trabalho|faculdade|escola|família|familia|relacionamento|namorado|namorada|marido|esposa|mãe|mae|pai|irmão|irmao|irmã|irma|amigo|amiga|colega)\b/i.test(value)) {
+    categories.push('fact');
+  }
+
+  if (!categories.length) categories.push('fact');
+  return categories;
+}
+
+function section(title, items) {
+  const body = items.length
+    ? items.map(item => `• ${firstPersonLine(item)}`).join('\n')
+    : '• Ainda não ficou claro para mim.';
+  return `${title}\n${body}`;
+}
+
+function firstPersonLine(text) {
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return '';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).replace(/[.!?]+$/, '') + '.';
+}
+
+function unique(items) {
+  return [...new Set(items.filter(Boolean))];
 }
 
 function firstUnused(state, questions) {

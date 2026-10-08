@@ -5,7 +5,8 @@ import {
   openingQuestion,
   nextQuestion,
   chooseAdaptiveQuestion,
-  buildSummary
+  buildSummary,
+  buildStructuredSummary
 } from '../../conversation/engine.js';
 import { assessSafety, AI_BOUNDARIES } from '../../safety/policy.js';
 
@@ -65,13 +66,39 @@ test('profundidade leve converge cedo para síntese em vez de interrogatório', 
   assert.match(q, /rascunho|Me ajuda a dizer isso|acrescentar/i);
 });
 
-test('síntese usa primeira pessoa e não cria diagnóstico', () => {
+test('síntese estruturada separa conteúdo declarado sem inventar diagnóstico', () => {
   const state = createConversation({ mode: 'session', depth: 'medium' });
+  nextQuestion(state, 'Briguei com meu namorado ontem.');
   nextQuestion(state, 'Tenho vergonha de falar sobre meu relacionamento.');
-  nextQuestion(state, 'Tenho medo de ser julgada.');
+  nextQuestion(state, 'Tenho medo de contar isso na sessão.');
+
+  const structured = buildStructuredSummary(state);
+  assert.deepEqual(structured.facts, [
+    'Briguei com meu namorado ontem.',
+    'Tenho vergonha de falar sobre meu relacionamento.'
+  ]);
+  assert.deepEqual(structured.emotions, [
+    'Tenho vergonha de falar sobre meu relacionamento.',
+    'Tenho medo de contar isso na sessão.'
+  ]);
+  assert.deepEqual(structured.difficulties, [
+    'Tenho vergonha de falar sobre meu relacionamento.',
+    'Tenho medo de contar isso na sessão.'
+  ]);
+
   const summary = buildSummary(state);
-  assert.match(summary, /Quero falar sobre/i);
+  assert.match(summary, /O que aconteceu/i);
+  assert.match(summary, /O que eu disse que senti/i);
+  assert.match(summary, /O que está difícil de dizer/i);
+  assert.match(summary, /O que eu gostaria de levar para a sessão/i);
   assert.doesNotMatch(summary, /diagnóstico|dependência emocional|transtorno/i);
+});
+
+test('síntese deixa lacuna explícita quando uma categoria não foi declarada', () => {
+  const state = createConversation({ mode: 'event', depth: 'light' });
+  nextQuestion(state, 'Briguei com meu namorado ontem.');
+  const summary = buildSummary(state);
+  assert.match(summary, /O que eu disse que senti\n• Ainda não ficou claro para mim\./i);
 });
 
 test('situação de perigo imediato interrompe fluxo comum', () => {
