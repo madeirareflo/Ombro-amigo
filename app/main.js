@@ -8,7 +8,7 @@ import {
   getLocalDataStatus,
   clearAllLocalData
 } from '../storage/local-store.js';
-import { urgentHelpGuidance } from '../safety/policy.js';
+import { urgentHelpGuidance, detectExplicitImmediateDanger, assessSafety } from '../safety/policy.js';
 import { copyText } from './clipboard.js';
 
 const onboardingView=document.querySelector('#onboarding-view');
@@ -139,9 +139,9 @@ function refreshResumePanel() {
   resumeInfo.textContent=`${depthName(saved.session.depth)} · ${when} · somente neste aparelho`;
 }
 
-function showUrgentHelp() {
+function showUrgentHelp(messageOverride=null) {
   const guidance=urgentHelpGuidance('BR');
-  safetyMessage.textContent=guidance.message;
+  safetyMessage.textContent=messageOverride || guidance.message;
   safetyResources.replaceChildren();
   guidance.resources.forEach(resource=>{
     const item=document.createElement('div');
@@ -184,6 +184,16 @@ replyForm.addEventListener('submit',event=>{
   if(!text||!session)return;
   addMessage('user',text);
   reply.value='';
+
+  const safety=assessSafety({
+    explicitImmediateDanger:detectExplicitImmediateDanger(text)
+  });
+
+  if(safety.interrupt) {
+    showUrgentHelp(safety.message);
+    return;
+  }
+
   const question=nextQuestion(session,text);
   addMessage('ai',question);
   persist('conversation');

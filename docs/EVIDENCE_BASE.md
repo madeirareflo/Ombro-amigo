@@ -166,3 +166,20 @@ Não podemos afirmar, com essas fontes, que o Ombro-amigo:
 - é uma intervenção psicológica validada.
 
 Essas perguntas exigem desenho de pesquisa próprio, revisão ética/profissional e validação com usuários e psicólogos.
+
+
+## 6. Redirecionamento local para perigo explicitamente declarado
+
+A APA alerta que o manejo de crises por chatbots é limitado e imprevisível. Por isso, o Ombro-amigo **não tenta fazer avaliação automática de risco** a partir de sofrimento vago ou inferências.
+
+O runtime reconhece apenas um conjunto pequeno de declarações literais de intenção/perigo imediato, como “quero me matar”, “vou me machucar” ou “vou matar alguém”. Quando isso ocorre:
+
+- o fluxo conversacional comum é interrompido;
+- o texto não é transformado em interpretação clínica;
+- o app apresenta ajuda humana e recursos regionais;
+- a ausência do gatilho **não significa ausência de risco**.
+
+Fonte principal:
+- APA Health Advisory (2025): https://www.apa.org/topics/artificial-intelligence-machine-learning/health-advisory-chatbots-wellness-apps
+
+Este mecanismo é uma barreira de segurança conservadora, não um detector clínico.
