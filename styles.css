@@ -80,3 +80,6 @@ button.danger { color:#8a3434; border-color:#d8aaaa; }
 @media (max-width:560px) {
   .ack-grid { grid-template-columns:1fr; }
 }
+
+.copy-panel { margin-top:1rem; padding:1rem; border:1px solid var(--border); border-radius:16px; background:#f8fbfa; }
+.copy-panel p { margin:.45rem 0 .8rem; line-height:1.45; }
