@@ -50,3 +50,8 @@ No corpus sintético de regressão:
 - excluded leak count esperado: 0.
 
 Source coverage é descritiva e não deve ser otimizada isoladamente.
+
+
+## Formato codificado
+
+Para a Fase A, `research/pilot-metrics.js` oferece um formato mínimo e versionado para registrar as medidas acima sem adicionar campos narrativos arbitrários. O registro exige o SHA da versão avaliada para manter rastreabilidade entre resultados e código.

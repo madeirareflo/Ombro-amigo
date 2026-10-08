@@ -83,3 +83,12 @@ Interromper progressão para Fase B se aparecer:
 - qualquer problema de privacidade que exponha relato além do dispositivo.
 
 Um bloqueador exige correção e repetição das tarefas afetadas. Não existe “média boa” que compense um bloqueador de segurança.
+
+
+## Formato mínimo de métricas
+
+O módulo `research/pilot-metrics.js` cria um registro codificado para a Fase A. Ele mantém apenas código pseudônimo do participante, SHA da versão, resultado das tarefas, compreensão de papel, escalas de autonomia, contagens de problemas de fidelidade e códigos de barreiras de acessibilidade.
+
+Campos fora desse formato são descartados. Códigos de tarefa/barreira não aceitam texto narrativo longo. A intenção é evitar que o registro estruturado vire um local conveniente para copiar material da sessão.
+
+Esse módulo não coleta nada automaticamente e não é incluído no bundle público. Qualquer anotação livre usada pela equipe de pesquisa deve ter política própria de minimização, acesso e retenção.
