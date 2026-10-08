@@ -76,3 +76,21 @@ export function clearAcknowledgement(storage=browserStorage()) {
   if (!storage) return;
   storage.removeItem(ACK_KEY);
 }
+
+
+export function getLocalDataStatus(storage=browserStorage()) {
+  const state=loadLocalState(storage);
+  const acknowledgement=loadAcknowledgement(storage);
+  return {
+    hasConversation:Boolean(state?.session),
+    savedAt:state?.savedAt || null,
+    hasAcknowledgement:Boolean(acknowledgement),
+    acceptedAt:acknowledgement?.acceptedAt || null
+  };
+}
+
+export function clearAllLocalData(storage=browserStorage()) {
+  if (!storage) return;
+  clearLocalState(storage);
+  clearAcknowledgement(storage);
+}
