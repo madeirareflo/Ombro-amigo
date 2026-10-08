@@ -66,3 +66,10 @@ Relatório com:
 - limitações.
 
 Não usar a expressão “validado clinicamente” com base apenas nessa revisão.
+
+
+## Materialização no repositório
+
+O procedimento acima pode ser operacionalizado pelo gerador descrito em [REVIEW_PACKET.md](REVIEW_PACKET.md). Ele cria uma ordem cega reproduzível dos casos fictícios, mantém IDs de regra e finalidade fora do pacote entregue ao profissional e gera uma chave técnica separada para ser aberta somente após o fechamento das notas.
+
+O gerador não substitui os revisores humanos e não transforma os testes automatizados em revisão profissional.
