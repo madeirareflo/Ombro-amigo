@@ -101,3 +101,75 @@ test('PWA recarrega offline depois da primeira carga com os módulos de armazena
   await expect(page.locator('#onboarding-title')).toContainText('Uma ferramenta para preparar uma conversa humana');
   await expect(page.locator('#pwa-status')).toContainText('Offline');
 });
+
+
+test('fluxo real do app grava o relato somente no IndexedDB cifrado',async({page})=>{
+  await page.goto('/');
+
+  await page.locator('#adult-confirm').check();
+  await page.locator('#acknowledge-test').click();
+  await page.locator('[data-start="event"]').click();
+
+  const sensitive='texto pessoal para validar integração real';
+  await page.locator('#reply').fill(sensitive);
+  await page.locator('#reply-form button[type="submit"]').click();
+
+  await expect.poll(async()=>page.evaluate(async()=>{
+    const request=indexedDB.open('ombro-amigo.secure.v1',1);
+    const db=await new Promise((resolve,reject)=>{
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error);
+    });
+    const tx=db.transaction('state','readonly');
+    const get=tx.objectStore('state').get('conversation');
+    const record=await new Promise((resolve,reject)=>{
+      get.onsuccess=()=>resolve(get.result);
+      get.onerror=()=>reject(get.error);
+    });
+    db.close();
+    return Boolean(record?.encrypted?.ciphertext?.length);
+  })).toBe(true);
+
+  const persisted=await page.evaluate(async sensitiveText=>{
+    const localValues=Object.keys(localStorage).map(key=>({
+      key,
+      value:localStorage.getItem(key)
+    }));
+
+    const request=indexedDB.open('ombro-amigo.secure.v1',1);
+    const db=await new Promise((resolve,reject)=>{
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error);
+    });
+    const tx=db.transaction(['state','keys'],'readonly');
+    const stateRequest=tx.objectStore('state').get('conversation');
+    const keyRequest=tx.objectStore('keys').get('conversation-key');
+    const [state,key]=await Promise.all([
+      new Promise((resolve,reject)=>{
+        stateRequest.onsuccess=()=>resolve(stateRequest.result);
+        stateRequest.onerror=()=>reject(stateRequest.error);
+      }),
+      new Promise((resolve,reject)=>{
+        keyRequest.onsuccess=()=>resolve(keyRequest.result);
+        keyRequest.onerror=()=>reject(keyRequest.error);
+      })
+    ]);
+    db.close();
+
+    return {
+      localValues,
+      stateSerialized:JSON.stringify(state),
+      keyExtractable:key?.extractable ?? null,
+      plaintextInLocalStorage:localValues.some(item=>item.value?.includes(sensitiveText))
+    };
+  },sensitive);
+
+  expect(persisted.plaintextInLocalStorage).toBe(false);
+  expect(persisted.localValues.map(item=>item.key)).toEqual(['ombro-amigo.acknowledgement.v1']);
+  expect(persisted.stateSerialized).not.toContain(sensitive);
+  expect(persisted.keyExtractable).toBe(false);
+
+  await page.reload();
+  await expect(page.locator('#resume-panel')).not.toHaveClass(/hidden/);
+  await expect(page.locator('#resume-info')).toContainText('persistida cifrada neste navegador');
+});
