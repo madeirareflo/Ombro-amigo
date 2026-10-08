@@ -5,7 +5,7 @@ import { classifyLocalIntent } from '../../conversation/local-intent-classifier.
 import { LOCAL_INTENT_EVAL_V2 } from '../fixtures/local-intent-eval-v2.mjs';
 import {
   normalizeFixtureText, validateEvaluationFixtures, partitionByFamily,
-  evaluateIntentRows, INTENT_LABELS
+  evaluateIntentRows, INTENT_LABELS, selectBalancedEvaluation
 } from '../../scripts/lib/intent-evaluation-v2.mjs';
 
 const training = Object.values(SYNTHETIC_INTENT_EXAMPLES).flat();
@@ -21,6 +21,17 @@ test('320 utterances, 40 semantic families, balanced labels, family-held-out spl
     assert.equal(validation.filter(x => x.label === label).length, 8);
     assert.equal(holdout.filter(x => x.label === label).length, 32);
   }
+});
+
+test('capped ONNX trial is stratified across every intent label', () => {
+  const { holdout } = partitionByFamily(LOCAL_INTENT_EVAL_V2);
+  const selected = selectBalancedEvaluation(holdout, 64);
+  assert.equal(selected.length, 64);
+  for (const label of INTENT_LABELS) {
+    assert.equal(selected.filter(row => row.label === label).length, 8);
+  }
+  assert.deepEqual(selected, selectBalancedEvaluation(holdout, 64));
+  assert.throws(() => selectBalancedEvaluation(holdout, 0), /limit/);
 });
 
 test('no exact overlap between evaluation and training or duplicates after normalization', () => {
