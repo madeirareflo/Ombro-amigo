@@ -61,6 +61,16 @@ Regras conservadoras desta versão:
 - A origem sintética pode resultar em validação artificialmente otimista;
   não transformar os resultados do CI em alegação de qualidade clínica.
 
+## Resultado preliminar do CI
+
+Na revisão `ad0471a`, a suíte `npm run check` executou **249 testes,
+249 aprovados**. No smoke test com **20 paráfrases sintéticas** não copiadas
+literalmente do corpus, o baseline aceitou **9/20 (45% de cobertura)**,
+acertando **9/9 das aceitas**. Esse número não permite afirmar precisão de
+100% na prática, pois a amostra é minúscula, não independente de família
+lexical e selecionada pela política de abstenção. A cobertura é insuficiente
+para ativação automática. Não houve validação por psicólogos.
+
 ## Gates para uma próxima implementação neural ONNX
 
 1. Criar pelo menos 300–800 cenários **fictícios e independentes**, com split
