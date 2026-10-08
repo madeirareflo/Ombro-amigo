@@ -45,3 +45,11 @@ footer { text-align:center; color:var(--muted); font-size:.75rem; padding:0 1rem
   .card { border-radius:20px; }
   .actions > *,.summary-actions > * { flex:1 1 100%; }
 }
+
+.resume-panel { margin:1rem 0; padding:1rem; border:1px solid var(--border); border-radius:16px; background:#f8fbfa; }
+.resume-panel p { margin:.35rem 0 .8rem; }
+.resume-actions { display:flex; gap:.55rem; flex-wrap:wrap; }
+button.danger { color:#8a3434; border-color:#d8aaaa; }
+@media (max-width:560px) {
+  .resume-actions > * { flex:1 1 100%; }
+}
