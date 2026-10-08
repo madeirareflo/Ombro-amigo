@@ -1,5 +1,6 @@
 const KEY='ombro-amigo.local-state.v2';
 const LEGACY_KEY='ombro-amigo.session.v1';
+const ACK_KEY='ombro-amigo.acknowledgement.v1';
 
 function browserStorage() {
   return typeof localStorage === 'undefined' ? null : localStorage;
@@ -46,4 +47,32 @@ export function clearLocalState(storage=browserStorage()) {
   if (!storage) return;
   storage.removeItem(KEY);
   storage.removeItem(LEGACY_KEY);
+}
+
+
+export function saveAcknowledgement(storage=browserStorage()) {
+  if (!storage) return null;
+  const acknowledgement={
+    version:1,
+    acceptedAt:new Date().toISOString()
+  };
+  storage.setItem(ACK_KEY,JSON.stringify(acknowledgement));
+  return acknowledgement;
+}
+
+export function loadAcknowledgement(storage=browserStorage()) {
+  if (!storage) return null;
+  try {
+    const raw=storage.getItem(ACK_KEY);
+    if(!raw) return null;
+    const parsed=JSON.parse(raw);
+    return parsed?.version===1 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearAcknowledgement(storage=browserStorage()) {
+  if (!storage) return;
+  storage.removeItem(ACK_KEY);
 }
