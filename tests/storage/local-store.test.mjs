@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { saveLocalState, loadLocalState, clearLocalState } from '../../storage/local-store.js';
+import {
+  saveLocalState,
+  loadLocalState,
+  clearLocalState,
+  saveAcknowledgement,
+  loadAcknowledgement,
+  clearAcknowledgement
+} from '../../storage/local-store.js';
 
 function fakeStorage() {
   const map=new Map();
@@ -38,4 +45,21 @@ test('apagar remove o estado local', () => {
   saveLocalState({session:{entries:[{text:'x'}]}},storage);
   clearLocalState(storage);
   assert.equal(loadLocalState(storage),null);
+});
+
+
+test('ciência do teste é local e separada do conteúdo da conversa', () => {
+  const storage=fakeStorage();
+  const acknowledgement=saveAcknowledgement(storage);
+  assert.equal(acknowledgement.version,1);
+  assert.ok(acknowledgement.acceptedAt);
+  assert.equal(loadLocalState(storage),null);
+  assert.equal(loadAcknowledgement(storage).version,1);
+});
+
+test('ciência do teste pode ser removida localmente', () => {
+  const storage=fakeStorage();
+  saveAcknowledgement(storage);
+  clearAcknowledgement(storage);
+  assert.equal(loadAcknowledgement(storage),null);
 });
