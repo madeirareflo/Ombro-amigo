@@ -1,7 +1,9 @@
 const START_QUESTIONS = {
   event: 'Isso tem mais a ver com algo que aconteceu ou com como você se sentiu depois?',
   session: 'O que torna esse assunto difícil de começar na sessão?',
-  feeling: 'Você percebe isso mais nos pensamentos, no corpo, na vontade de fazer as coisas ou nas relações com outras pessoas?'
+  feeling: 'Você percebe isso mais nos pensamentos, no corpo, na vontade de fazer as coisas ou nas relações com outras pessoas?',
+  afterSession: 'O que ficou da última sessão que você gostaria de registrar ou retomar?',
+  record: 'Escreva o que você quer guardar. Neste modo, eu não vou aprofundar com perguntas.'
 };
 
 const DEPTH_LIMITS = {
@@ -143,7 +145,9 @@ export function nextQuestion(state, answer) {
   if (!Array.isArray(state.transcript)) state.transcript = [];
   state.transcript.push({ role: 'user', text });
 
-  const question = chooseAdaptiveQuestion(state, text);
+  const question = state.mode === 'record'
+    ? 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.'
+    : chooseAdaptiveQuestion(state, text);
   state.turn += 1;
   state.lastQuestion = question;
   markQuestionUsed(state, question);
