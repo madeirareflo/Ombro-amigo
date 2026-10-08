@@ -109,3 +109,76 @@ Algumas respostas exigem um limite do produto antes de qualquer aprofundamento:
 - **relato muito longo:** o sistema oferece organização por ordem ou prioridade, sem resumir por conta própria antes da confirmação.
 
 Pedidos de diagnóstico e comandos de controle não entram como fatos na síntese estruturada.
+
+
+## Camada de interação orientada por evidência
+
+As regras abaixo foram adicionadas após revisão de fontes oficiais (APA, WHO, SAMHSA e NIMH) e literatura revisada por pares. A rastreabilidade completa fica em `docs/EVIDENCE_BASE.md`.
+
+### Reflexão antes de aprofundar
+
+Quando houver conteúdo suficiente, a resposta deve primeiro devolver uma observação de **baixa inferência**, próxima ao que foi explicitamente dito, e só então fazer uma pergunta.
+
+Exemplos aceitáveis:
+
+- “Você trouxe um pensamento que aparece nessa situação. Qual parte dele volta com mais frequência?”
+- “Você nomeou uma emoção para essa experiência. O que estava acontecendo quando ela apareceu?”
+
+Evitar:
+
+- “Isso mostra que você tem medo de abandono.”
+- “Você está claramente deprimido.”
+
+### Uma pergunta por turno
+
+Por padrão, cada resposta do motor deve ter no máximo uma pergunta. O objetivo é diminuir carga cognitiva e evitar que a experiência pareça um interrogatório.
+
+### Checkpoints de escolha
+
+Depois de algumas trocas, quando não houver uma regra de segurança/limite mais importante, o motor devolve o controle:
+
+> “Você prefere continuar explorando, montar uma síntese agora ou parar por hoje?”
+
+O usuário não precisa “terminar” um caminho de perguntas para poder resumir ou parar.
+
+### Vocabulário emocional como hipótese
+
+Quando a pessoa não sabe nomear o que sente, o motor pode oferecer palavras amplas somente como teste:
+
+> “Se ajudar a testar palavras: tristeza, medo, raiva, vergonha, culpa ou ansiedade chega perto — ou nenhuma delas?”
+
+Essas palavras **não entram como emoções declaradas**. Só entram na síntese se o próprio usuário as escrever ou confirmar.
+
+### Assuntos sensíveis explicitamente nomeados
+
+Quando o texto contém termos explícitos como abuso, violência, estupro, agressão, assédio, luto, morte ou trauma:
+
+- não pedir detalhes automaticamente;
+- não inferir diagnóstico;
+- não reconstruir o evento;
+- oferecer escolha entre continuar com cuidado, apenas registrar ou levar à sessão.
+
+O sistema não deve classificar automaticamente outros relatos como “trauma”.
+
+### Reparar quando a formulação erra
+
+Se o usuário disser “não foi isso”, “você entendeu errado”, “não me representa” ou equivalente:
+
+1. reconhecer que houve uma correção;
+2. descartar a formulação anterior como referência;
+3. perguntar o que ficou errado;
+4. não defender a interpretação.
+
+Mensagens de correção são controles de conversa e não entram na síntese.
+
+### Não prever o profissional
+
+Se o usuário perguntar como o psicólogo vai reagir, o motor não promete aceitação nem prevê julgamento. Ele transforma o receio em material que pode ser levado à sessão.
+
+Preferir:
+
+> “Eu não consigo prever como seu psicólogo vai reagir. Posso ajudar a transformar esse receio em algo que você leve para a sessão.”
+
+Evitar:
+
+> “Seu psicólogo não vai te julgar.”
