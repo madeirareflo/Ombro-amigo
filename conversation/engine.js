@@ -328,7 +328,7 @@ export function chooseAdaptiveTurn(state, answer) {
   }
 
   // Prioriza detalhes declarados, sem atribuir significado clínico a eles.
-  if (/\\b(mundo|ambiente|ao redor|luz|claro|clara|colorido|colorida|cores)\\b/i.test(text) && /\\b(assusta|assustado|assustada|medo|estranho|estranha)\\b/i.test(text)) {
+  if (/\b(mundo|ambiente|ao redor|luz|claro|clara|colorido|colorida|cores)\b/i.test(text) && /\b(assusta|assustado|assustada|medo|estranho|estranha)\b/i.test(text)) {
     const options=[
       'Você descreveu uma mudança em como percebe o ambiente e disse que isso às vezes assusta. Quer registrar quando percebe isso ou como é para você?',
       'Sem precisar explicar a causa, o que gostaria que seu psicólogo soubesse sobre essa experiência?'
