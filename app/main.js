@@ -1,4 +1,4 @@
-import { createConversation, openingQuestion, nextQuestion, buildSummary } from '../conversation/engine.js';
+import { createConversation, openingQuestion, nextQuestion, skipQuestion, buildSummary } from '../conversation/engine.js';
 import {
   saveLocalState,
   loadLocalState,
@@ -171,6 +171,14 @@ replyForm.addEventListener('submit',event=>{
   addMessage('user',text);
   reply.value='';
   const question=nextQuestion(session,text);
+  addMessage('ai',question);
+  persist('conversation');
+});
+
+document.querySelector('#skip-question').addEventListener('click',()=>{
+  if(!session) return;
+  const question=skipQuestion(session);
+  addMessage('user','Prefiro não responder a essa pergunta.');
   addMessage('ai',question);
   persist('conversation');
 });

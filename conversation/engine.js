@@ -94,6 +94,7 @@ export function createConversation({ mode, depth = 'light' }) {
     turn: 0,
     entries: [],
     usedQuestions: [],
+    skips: 0,
     lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session,
     transcript: [
       { role: 'ai', text: START_QUESTIONS[mode] || START_QUESTIONS.session }
@@ -120,6 +121,26 @@ export function nextQuestion(state, answer) {
 
   const question = chooseAdaptiveQuestion(state, text);
   state.turn += 1;
+  state.lastQuestion = question;
+  markQuestionUsed(state, question);
+  state.transcript.push({ role: 'ai', text: question });
+  return question;
+}
+
+export function skipQuestion(state) {
+  if (!Array.isArray(state.transcript)) state.transcript = [];
+  state.skips = Number(state.skips || 0) + 1;
+  state.turn += 1;
+  state.transcript.push({
+    role: 'user',
+    text: 'Prefiro não responder a essa pergunta.',
+    meta: 'skip'
+  });
+
+  const question = state.skips >= 2
+    ? 'Sem problema. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
+    : 'Sem problema. Podemos ir por outro caminho: o que seria mais fácil agora — falar do que aconteceu, de como você ficou depois, ou ir direto para uma síntese?';
+
   state.lastQuestion = question;
   markQuestionUsed(state, question);
   state.transcript.push({ role: 'ai', text: question });
