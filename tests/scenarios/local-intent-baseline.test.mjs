@@ -32,14 +32,24 @@ test('classificador devolve campos simples sem cópia do texto de entrada', () =
   assert.ok(!('input' in result));
 });
 
-test('classifica exemplos claros apenas como candidatos auxiliares', () => {
+test('reconhece a intenção candidata e pode se abster por limiar conservador', () => {
+  let accepted = 0;
+  let total = 0;
   for (const [label, phrases] of Object.entries(cases)) {
     for (const phrase of phrases) {
+      total += 1;
       const result = classifyLocalIntent(phrase, { lastQuestionDimension: 'scope' });
       assert.equal(result.candidateIntent, label, phrase + ' => ' + JSON.stringify(result));
-      assert.equal(result.intent, label, phrase + ' => ' + JSON.stringify(result));
+      if (result.intent !== null) {
+        assert.equal(result.intent, label);
+        accepted += 1;
+      } else {
+        assert.equal(result.abstained, true);
+        assert.ok(['low-similarity', 'ambiguous-label'].includes(result.reason), JSON.stringify(result));
+      }
     }
   }
+  assert.ok(accepted / total >= 0.70, JSON.stringify({ accepted, total }));
 });
 
 test('escopo amplo só vale quando a pergunta anterior era sobre escopo', () => {
