@@ -36,7 +36,7 @@ const BOUNDARY_RULES = [
   },
   {
     key: 'dependency',
-    pattern: /\b(só consigo falar com você|so consigo falar com voce|prefiro falar com você|prefiro falar com voce|você é a única pessoa|voce e a unica pessoa|só você me entende|so voce me entende)\b/i,
+    pattern: /(só consigo falar com você|so consigo falar com voce|prefiro falar com você|prefiro falar com voce|você é a única pessoa|voce e a unica pessoa|só você me entende|so voce me entende)/i,
     response: 'Posso ajudar a preparar o que você quer dizer, mas não quero ocupar o lugar de uma pessoa ou profissional. O que você gostaria de conseguir levar desta conversa para alguém de confiança ou para seu psicólogo?'
   },
   {
