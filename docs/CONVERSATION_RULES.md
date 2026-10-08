@@ -82,3 +82,17 @@ A síntese deve:
 - ser totalmente editável;
 - poder ser rejeitada;
 - nunca ser enviada sem autorização explícita.
+
+
+## Síntese estruturada
+
+A síntese do MVP passa a separar quatro blocos:
+
+1. **O que aconteceu** — fatos ou situações descritas pela própria pessoa.
+2. **O que eu disse que senti** — somente emoções nomeadas explicitamente.
+3. **O que está difícil de dizer** — apenas trechos em que a própria pessoa relata trava, evitação, vergonha de falar ou medo de contar.
+4. **O que eu gostaria de levar para a sessão** — recorte curto do que a pessoa acabou de registrar, preservando suas palavras.
+
+Se uma categoria não estiver sustentada pelo relato, o sistema deve mostrar que ela ainda não ficou clara, em vez de completar a lacuna por inferência.
+
+A síntese continua sendo um rascunho editável. Ela não é interpretação clínica e não deve ser tratada como prontuário ou avaliação profissional.
