@@ -91,7 +91,27 @@ async function createDefaultBackend(){
   }
 
   const db=await openDb(indexedDbApi);
+  const [primary,backup]=await Promise.all([
+    idbGet(db,STATE_STORE,STATE_ID),
+    idbGet(db,STATE_STORE,BACKUP_ID)
+  ]);
   let key=await idbGet(db,KEY_STORE,KEY_ID);
+
+  if(!key && (primary?.encrypted || backup?.encrypted)){
+    return {
+      mode:'locked-indexeddb',
+      persistent:false,
+      encrypted:true,
+      key:null,
+      cryptoApi,
+      initialError:'missing-encryption-key',
+      hasUnreadableData:true,
+      getRecord:id=>idbGet(db,STATE_STORE,id),
+      deleteAllSensitive:()=>idbDeleteAllSensitive(db),
+      close:()=>db.close()
+    };
+  }
+
   if(!key){
     key=await generateLocalEncryptionKey(cryptoApi);
     await idbPut(db,KEY_STORE,KEY_ID,key);
@@ -103,6 +123,7 @@ async function createDefaultBackend(){
     encrypted:true,
     key,
     cryptoApi,
+    hasUnreadableData:false,
     getRecord:id=>idbGet(db,STATE_STORE,id),
     commitEncryptedRecord:record=>idbCommitState(db,record),
     deleteAllSensitive:()=>idbDeleteAllSensitive(db),
@@ -171,6 +192,10 @@ export function createConversationStorage({
     if(!backendPromise){
       backendPromise=Promise.resolve()
         .then(()=>backendFactory())
+        .then(target=>{
+          if(target?.initialError) lastError=target.initialError;
+          return target;
+        })
         .catch(error=>{
           lastError=error?.name || 'secure-storage-init-failed';
           return {mode:'memory-only',persistent:false,encrypted:false};
@@ -316,7 +341,7 @@ export function createConversationStorage({
       memoryState=null;
       recoveredFromBackup=false;
 
-      if(target.mode==='encrypted-indexeddb'){
+      if(typeof target.deleteAllSensitive==='function'){
         try{
           await target.deleteAllSensitive();
           target.close?.();
@@ -365,7 +390,12 @@ export function createConversationStorage({
       encrypted:target.encrypted,
       persistent:target.persistent,
       persistenceConfirmed,
-      keyStrategy:target.encrypted ? 'device-bound-non-extractable-same-origin' : 'none',
+      keyStrategy:target.mode==='encrypted-indexeddb'
+        ? 'device-bound-non-extractable-same-origin'
+        : target.hasUnreadableData
+          ? 'missing-local-key'
+          : 'none',
+      hasUnreadableData:Boolean(target.hasUnreadableData),
       recoveredFromBackup,
       legacyPlaintextPresent:hasLegacyConversationState(legacyStorage),
       error:lastError
