@@ -52,12 +52,24 @@ let currentView='onboarding';
 let summaryApproved=false;
 let summaryModel=null;
 
-function show(view){
+function focusViewEntry(view){
+  if(view===conversationView){
+    reply.focus({preventScroll:true});
+    return;
+  }
+
+  const labelledBy=view.getAttribute('aria-labelledby');
+  const heading=labelledBy?document.getElementById(labelledBy):null;
+  heading?.focus({preventScroll:true});
+}
+
+function show(view,{focusEntry=true}={}){
   [onboardingView,home,conversationView,summaryView,privacyView,safetyView].forEach(node=>node.classList.add('hidden'));
   view.classList.remove('hidden');
   if(view===privacyView) void refreshLocalDataStatus();
   currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':view===safetyView?'safety':view===onboardingView?'onboarding':'home';
   updateProgress();
+  if(focusEntry) focusViewEntry(view);
 }
 
 function updateProgress(){
@@ -102,6 +114,26 @@ function invalidateSummaryApproval(){
   copyStatus.textContent='';
 }
 
+function findSummaryItem(itemId){
+  return [...summaryEditor.querySelectorAll('textarea[data-item-id]')]
+    .find(node=>node.dataset.itemId===String(itemId)) || null;
+}
+
+function focusSummaryItem(itemId,{select=false}={}){
+  const target=findSummaryItem(itemId);
+  if(!target) return false;
+  target.focus();
+  if(select) target.select();
+  return true;
+}
+
+function focusSummaryAdd(sectionId){
+  const target=[...summaryEditor.querySelectorAll('button[data-add-section]')]
+    .find(node=>node.dataset.addSection===String(sectionId)) || null;
+  target?.focus();
+  return Boolean(target);
+}
+
 function renderSummaryEditor(){
   summaryEditor.replaceChildren();
   if(!summaryModel) return;
@@ -109,11 +141,14 @@ function renderSummaryEditor(){
   for(const section of summaryModel.sections){
     const wrapper=document.createElement('section');
     wrapper.className='summary-section';
+    wrapper.dataset.sectionId=section.id;
 
     const header=document.createElement('div');
     header.className='summary-section-header';
     const title=document.createElement('h3');
+    title.id='summary-section-'+section.id+'-title';
     title.textContent=section.title;
+    wrapper.setAttribute('aria-labelledby',title.id);
     const structure=document.createElement('span');
     structure.className='structure-badge';
     structure.textContent='Estrutura do app';
@@ -133,15 +168,18 @@ function renderSummaryEditor(){
       const area=document.createElement('textarea');
       area.rows=2;
       area.value=item.text;
-      area.setAttribute('aria-label',section.title);
+      area.dataset.itemId=item.id;
+      area.setAttribute('aria-label',section.title+' — ponto da síntese');
       const badge=document.createElement('span');
+      badge.id='summary-origin-'+section.id+'-'+section.items.indexOf(item);
       badge.className='origin-badge';
       badge.textContent=item.origin==='edited'?'Você editou':'Você escreveu';
+      area.setAttribute('aria-describedby',badge.id);
       const remove=document.createElement('button');
       remove.type='button';
       remove.className='remove-item';
       remove.textContent='Remover';
-      remove.setAttribute('aria-label','Remover este ponto da síntese');
+      remove.setAttribute('aria-label','Remover ponto de '+section.title);
 
       area.addEventListener('input',()=>{
         item.text=area.value;
@@ -152,10 +190,13 @@ function renderSummaryEditor(){
         void persist('summary');
       });
       remove.addEventListener('click',()=>{
+        const index=section.items.findIndex(entry=>entry.id===item.id);
+        const fallbackId=section.items[index+1]?.id || section.items[index-1]?.id || null;
         summaryModel=removeSummaryItem(summaryModel,section.id,item.id);
         invalidateSummaryApproval();
         syncSummaryText();
         renderSummaryEditor();
+        if(!fallbackId || !focusSummaryItem(fallbackId)) focusSummaryAdd(section.id);
         void persist('summary');
       });
       row.append(area,badge,remove);
@@ -165,14 +206,17 @@ function renderSummaryEditor(){
     const add=document.createElement('button');
     add.type='button';
     add.className='add-item';
+    add.dataset.addSection=section.id;
     add.textContent='+ Adicionar um ponto com minhas palavras';
     add.addEventListener('click',()=>{
       summaryModel=addEditedItem(summaryModel,section.id,'Novo ponto');
+      const updatedSection=summaryModel.sections.find(entry=>entry.id===section.id);
+      const addedId=updatedSection?.items.at(-1)?.id || null;
       invalidateSummaryApproval();
       syncSummaryText();
       renderSummaryEditor();
+      if(addedId) focusSummaryItem(addedId,{select:true});
       void persist('summary');
-      wrapper.querySelectorAll('textarea')[wrapper.querySelectorAll('textarea').length-1]?.select();
     });
     wrapper.appendChild(add);
     summaryEditor.appendChild(wrapper);
@@ -219,7 +263,6 @@ function start(mode){
   summaryText.value='';
   invalidateSummaryApproval();
   void persist('conversation');
-  reply.focus();
 }
 
 async function resumeSavedConversation(){
@@ -496,10 +539,10 @@ window.addEventListener('offline',updatePwaStatus);
 async function bootstrap(){
   await initializeConversationStorage();
   if(hasAcknowledgedTest()){
-    show(home);
+    show(home,{focusEntry:false});
     await refreshResumePanel();
   }else{
-    show(onboardingView);
+    show(onboardingView,{focusEntry:false});
   }
   updatePwaStatus();
 }
