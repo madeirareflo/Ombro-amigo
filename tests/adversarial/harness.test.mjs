@@ -26,6 +26,6 @@ for(const scenario of scenarios){
     for(const part of scenario.mustNotMatch || []){
       assert.ok(!lower.includes(part.toLocaleLowerCase('pt-BR')),'conteúdo proibido: '+part+' | '+turn.text);
     }
-    assert.ok((turn.text.match(/\\?/g)||[]).length<=1,'mais de uma pergunta no turno');
+    assert.ok((turn.text.match(/\?/g)||[]).length<=1,'mais de uma pergunta no turno');
   });
 }
