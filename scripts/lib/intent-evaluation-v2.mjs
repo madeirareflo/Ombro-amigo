@@ -174,7 +174,10 @@ export function evaluateIntentRows(rows, predict) {
     releaseBlockers: [
       'no-professional-blind-review',
       'no-real-device-benchmark',
-      'no-calibrated-independent-evaluation'
+      'no-calibrated-independent-evaluation',
+      ...(protectedFalseActivations > 0 ? ['protected-class-false-action'] : []),
+      ...(ratio(safeAccepted, safeExpected) < 0.95 ? ['insufficient-safe-intent-coverage'] : []),
+      ...(ratio(acceptedCorrect, accepted) < 0.99 ? ['insufficient-accepted-precision'] : [])
     ]
   };
 }
