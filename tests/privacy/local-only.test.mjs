@@ -11,7 +11,7 @@ test('página bloqueia conexões iniciadas pelo app', async () => {
 test('interface declara armazenamento local e ausência de compartilhamento', async () => {
   const html=await readFile('index.html','utf8');
   assert.match(html,/A conversa fica neste aparelho/);
-  assert.match(html,/Compartilhamento ainda não foi implementado/);
+  assert.match(html,/Nada automaticamente/);
   assert.match(html,/não possui endpoint para receber suas conversas/);
 });
 
@@ -37,4 +37,12 @@ test('recursos carregados pela página principal são locais', async () => {
   ];
   assert.ok(refs.length>0);
   assert.ok(refs.every(ref=>ref.startsWith('./') || ref.startsWith('/')));
+});
+
+
+test('compartilhamento manual é descrito como cópia, não envio automático', async () => {
+  const html=await readFile('index.html','utf8');
+  assert.match(html,/Copiar síntese/);
+  assert.match(html,/não envia nada/i);
+  assert.doesNotMatch(html,/navigator\.share/);
 });
