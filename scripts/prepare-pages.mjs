@@ -14,6 +14,8 @@ const files=[
   'conversation/engine.js',
   'conversation/policy.js',
   'storage/local-store.js',
+  'storage/crypto.js',
+  'storage/secure-store.js',
   'safety/policy.js'
 ];
 

@@ -19,14 +19,14 @@
     </div>
     <div class="status-stack">
       <span id="pwa-status" class="status-dot" aria-live="polite">Preparando modo offline…</span>
-      <button id="open-privacy" class="privacy-badge" type="button">Privado no aparelho</button>
+      <button id="open-privacy" class="privacy-badge" type="button">Dados no aparelho</button>
     </div>
   </header>
 
   <main class="app-shell">
     <section id="onboarding-view" class="card intro-card" aria-labelledby="onboarding-title">
       <p class="eyebrow">Protótipo para adultos</p>
-      <h1 id="onboarding-title">Uma ferramenta para preparar uma conversa humana</h1>
+      <h1 id="onboarding-title" tabindex="-1">Uma ferramenta para preparar uma conversa humana</h1>
       <p class="lead">Você escreve no seu ritmo. O app ajuda a organizar, sem diagnosticar nem tentar substituir seu psicólogo.</p>
 
       <div class="principle-list">
@@ -48,7 +48,7 @@
 
     <section id="home-view" class="card hidden" aria-labelledby="home-title">
       <p class="eyebrow">Antes da sessão</p>
-      <h1 id="home-title">O que você quer preparar?</h1>
+      <h1 id="home-title" tabindex="-1">O que você quer preparar?</h1>
       <p class="lead">Escolha só o ponto de partida. Você pode mudar de caminho depois.</p>
 
       <section id="resume-panel" class="resume-panel hidden" aria-label="Conversa salva neste aparelho">
@@ -124,7 +124,7 @@
         <span>Começando</span><span>Entendendo</span><span>Organizando</span><span class="active">Revisando</span>
       </nav>
       <p class="eyebrow">Síntese para revisar</p>
-      <h2 id="summary-title">Isso representa o que você quis dizer?</h2>
+      <h2 id="summary-title" tabindex="-1">Isso representa o que você quis dizer?</h2>
       <p class="muted">As frases marcadas “Você escreveu” vieram do seu relato. Ao editar, a marca muda para “Você editou”. A organização em seções é do aplicativo.</p>
       <div class="provenance-legend" aria-label="Legenda de origem">
         <span><i class="legend-user"></i>Você escreveu</span>
@@ -147,7 +147,7 @@
 
     <section id="safety-view" class="card safety-card hidden" aria-labelledby="safety-title" role="alert">
       <p class="eyebrow">Ajuda humana</p>
-      <h2 id="safety-title">Esta ferramenta não atende crises</h2>
+      <h2 id="safety-title" tabindex="-1">Esta ferramenta não atende crises</h2>
       <p id="safety-message"></p>
       <div id="safety-resources" class="safety-resources"></div>
       <p class="muted small">Ombro-amigo não faz diagnóstico ou avaliação clínica de risco e não entra em contato com serviços por você.</p>
@@ -160,20 +160,22 @@
         <span class="pill">Privacidade do teste</span>
       </div>
       <p class="eyebrow">Seus dados</p>
-      <h2 id="privacy-title">A conversa fica neste aparelho</h2>
-      <p class="lead">Sem conta, analytics, pixels ou sincronização. O site baixa os arquivos do aplicativo; seu texto não é enviado ao mantenedor.</p>
+      <h2 id="privacy-title" tabindex="-1">A conversa fica neste aparelho</h2>
+      <p class="lead">Sem conta, analytics, pixels ou sincronização. O site baixa os arquivos do aplicativo; seu texto não é enviado ao mantenedor. Quando o navegador oferece suporte, conversa e síntese são cifradas localmente antes de serem persistidas.</p>
 
       <div class="privacy-grid">
-        <article><strong>Neste aparelho</strong><p>Conversa, histórico e rascunho da síntese.</p></article>
+        <article><strong>Neste aparelho</strong><p>Conversa, histórico e rascunho. Com IndexedDB e Web Crypto disponíveis, a persistência é cifrada; sem essas APIs, novas conversas ficam somente em memória.</p></article>
         <article><strong>Enviado automaticamente</strong><p>Nada do conteúdo da conversa.</p></article>
         <article><strong>Disponível ao psicólogo</strong><p>Nada automaticamente. Você decide se copia uma síntese.</p></article>
         <article><strong>Controle</strong><p>Você pode apagar os dados locais a qualquer momento.</p></article>
+        <article><strong>Limite da cifra local</strong><p>A chave fica no mesmo perfil do navegador. Isso reduz exposição em repouso, mas não protege contra acesso ao navegador desbloqueado ou código comprometido na mesma origem.</p></article>
       </div>
 
       <section class="local-data-panel" aria-labelledby="local-data-title">
         <strong id="local-data-title">Dados locais neste navegador</strong>
-        <p id="local-data-status" class="muted small"></p>
+        <p id="local-data-status" class="muted small" aria-live="polite"></p>
         <button id="persist-storage" class="secondary" type="button">Tentar manter dados mesmo com pouco espaço</button>
+        <p class="muted small">Essa opção ajuda contra remoção automática pelo navegador; não aumenta a proteção criptográfica.</p>
         <p id="persist-status" class="muted small"></p>
         <button id="delete-all-local" class="ghost danger" type="button">Apagar todos os dados locais</button>
       </section>
