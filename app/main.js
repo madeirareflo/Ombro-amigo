@@ -272,8 +272,13 @@ async function refreshResumePanel(){
   const hasConversation=Boolean(saved?.session?.entries?.length || saved?.session?.transcript?.length);
   resumePanel.classList.toggle('hidden',!hasConversation);
   if(!hasConversation) return;
-  const when=saved.savedAt?new Date(saved.savedAt).toLocaleString('pt-BR'):'salva anteriormente';
-  resumeInfo.textContent=depthName(saved.session.depth)+' · '+when+' · somente neste aparelho';
+
+  const status=await getConversationStorageStatus();
+  const when=saved.savedAt?new Date(saved.savedAt).toLocaleString('pt-BR'):'registrada nesta sessão';
+  const persistence=status.persistenceConfirmed
+    ? 'persistida cifrada neste navegador'
+    : 'somente nesta sessão; persistência não confirmada';
+  resumeInfo.textContent=depthName(saved.session.depth)+' · '+when+' · '+persistence;
 }
 
 function showUrgentHelp(messageOverride=null){
@@ -399,7 +404,7 @@ acknowledgeButton.addEventListener('click',()=>{
   if(!adultConfirm.checked) return;
   saveAcknowledgement();
   show(home);
-  refreshResumePanel();
+  void refreshResumePanel();
 });
 
 $('#onboarding-privacy').addEventListener('click',()=>show(privacyView));

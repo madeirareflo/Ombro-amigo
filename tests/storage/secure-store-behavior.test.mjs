@@ -74,6 +74,7 @@ test('migra conversa v2, preserva savedAt e remove texto claro apenas após suce
   const status=await store.initializeConversationStorage();
   assert.equal(status.mode,'encrypted-indexeddb');
   assert.equal(status.legacyPlaintextPresent,false);
+  assert.equal(status.persistenceConfirmed,true);
   assert.equal(legacy.getItem('ombro-amigo.local-state.v2'),null);
 
   const loaded=await store.loadConversationState();
@@ -95,6 +96,7 @@ test('falha de migração mantém legado e ainda permite leitura sem sobrescreve
 
   const status=await store.initializeConversationStorage();
   assert.equal(status.legacyPlaintextPresent,true);
+  assert.equal(status.persistenceConfirmed,false);
   assert.ok(legacy.getItem('ombro-amigo.local-state.v2'));
   const loaded=await store.loadConversationState();
   assert.equal(loaded.session.entries[0].text,'não perder');

@@ -336,6 +336,7 @@ export function createConversationStorage({
     const target=await getBackend();
     let hasConversation=Boolean(memoryState?.session);
     let savedAt=memoryState?.savedAt || null;
+    let persistenceConfirmed=false;
 
     if(target.mode==='encrypted-indexeddb'){
       try{
@@ -347,6 +348,7 @@ export function createConversationStorage({
         if(record?.encrypted){
           hasConversation=true;
           savedAt=record.savedAt || savedAt;
+          persistenceConfirmed=!memoryState;
         }
       }catch(error){
         lastError=error?.name || 'secure-status-failed';
@@ -359,6 +361,7 @@ export function createConversationStorage({
       mode:target.mode,
       encrypted:target.encrypted,
       persistent:target.persistent,
+      persistenceConfirmed,
       keyStrategy:target.encrypted ? 'device-bound-non-extractable-same-origin' : 'none',
       recoveredFromBackup,
       legacyPlaintextPresent:hasLegacyConversationState(legacyStorage),
