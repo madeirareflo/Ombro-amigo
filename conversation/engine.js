@@ -58,7 +58,7 @@ const BOUNDARY_RULES = [
   {
     key: 'stop',
     ruleId: 'AUTONOMY-SKIP-01',
-    pattern: /\b(não quero aprofundar|nao quero aprofundar|quero parar|prefiro parar|chega por hoje|não quero continuar|nao quero continuar|não quero mais falar|nao quero mais falar|quero encerrar|por hoje é só|por hoje e so)\b/i,
+    pattern: /\b(não quero aprofundar|nao quero aprofundar|quero parar|prefiro parar|chega por hoje|não quero continuar|nao quero continuar|não quero mais falar|nao quero mais falar|quero encerrar|por hoje e so)\b|por hoje é só/i,
     response: 'Tudo bem. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
   },
   {
