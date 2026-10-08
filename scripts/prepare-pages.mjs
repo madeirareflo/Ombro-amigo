@@ -11,6 +11,7 @@ const files=[
   'app/main.js',
   'app/clipboard.js',
   'conversation/engine.js',
+  'conversation/policy.js',
   'storage/local-store.js',
   'safety/policy.js'
 ];
