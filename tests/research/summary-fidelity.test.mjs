@@ -62,3 +62,19 @@ test('repetição de uma mesma declaração não é contada como duas fontes ún
   const result=simulateSummaryGroundingCase(corpus.find(item=>item.id==='FID-010'));
   assert.equal(result.audit.totals.eligibleSources,1);
 });
+
+
+test('agregação conta ocorrências, não apenas textos únicos sem suporte',()=>{
+  const aggregate=aggregateGroundingAudits([
+    {
+      totals:{summaryClaims:3,eligibleSources:1},
+      unsupportedClaimCount:2,
+      unsupportedClaims:['claim sem suporte'],
+      excludedLeakCount:0,
+      excludedLeaks:[],
+      coveredSources:['fonte']
+    }
+  ]);
+  assert.equal(aggregate.totalUnsupported,2);
+  assert.equal(aggregate.unsupportedClaimRate,2/3);
+});
