@@ -6,6 +6,7 @@ import {
   nextQuestion,
   skipQuestion,
   chooseAdaptiveQuestion,
+  detectConversationControlIntent,
   buildSummary,
   buildStructuredSummary
 } from '../../conversation/engine.js';
@@ -289,4 +290,62 @@ test('mensagens de controle e perguntas não vazam para pontos da síntese', () 
   assert.deepEqual(structured.facts,['Briguei com meu namorado ontem.']);
   assert.equal(structured.sessionPoints.includes('Você entendeu errado.'),false);
   assert.equal(structured.sessionPoints.includes('Meu psicólogo vai me julgar?'),false);
+});
+
+
+test('pedido curto de esclarecimento reformula sem virar conteúdo declarado',()=>{
+  const state=createConversation({mode:'session',depth:'light'});
+  openingQuestion(state);
+  nextQuestion(state,'É uma coisa da minha família.');
+  const before=state.entries.length;
+  const response=nextQuestion(state,'Como assim?');
+  assert.equal(detectConversationControlIntent('Como assim?'),'clarify');
+  assert.equal(state.entries.length,before);
+  assert.match(response,/quero dizer|jeito mais simples|qual parte/i);
+  assert.equal(state.transcript.at(-2).meta,'control:clarify');
+});
+
+test('continuar explorando gera nova pergunta sem repetir checkpoint nem virar conteúdo',()=>{
+  const state=createConversation({mode:'feeling',depth:'light'});
+  openingQuestion(state);
+  nextQuestion(state,'Sinto como se o mundo ao meu redor estivesse mais claro e isso às vezes me assusta.');
+  const checkpoint=nextQuestion(state,'Tem dias em que isso fica mais forte.');
+  const before=state.entries.length;
+  const response=nextQuestion(state,'Continuar explorando');
+  assert.equal(detectConversationControlIntent('Continuar explorando'),'continue');
+  assert.equal(state.entries.length,before);
+  assert.notEqual(response,checkpoint);
+  assert.doesNotMatch(response,/já temos material suficiente|já apareceu material suficiente/i);
+  assert.equal(state.transcript.at(-2).meta,'control:continue');
+});
+
+test('pedido natural de síntese é reconhecido como controle e não como relato',()=>{
+  const state=createConversation({mode:'session',depth:'medium'});
+  nextQuestion(state,'Tenho medo de falar disso na sessão.');
+  const before=state.entries.length;
+  const response=nextQuestion(state,'Me ajuda a dizer isso');
+  assert.equal(detectConversationControlIntent('Me ajuda a dizer isso'),'summary');
+  assert.equal(state.entries.length,before);
+  assert.match(response,/síntese editável/i);
+  assert.equal(state.transcript.at(-2).meta,'control:summary');
+  assert.doesNotMatch(buildSummary(state),/Me ajuda a dizer isso/i);
+});
+
+test('checkpoint não se repete imediatamente em turnos consecutivos',()=>{
+  const state=createConversation({mode:'session',depth:'light'});
+  openingQuestion(state);
+  nextQuestion(state,'É uma coisa da minha família.');
+  nextQuestion(state,'Eu travo quando tento falar.');
+  const checkpoint=nextQuestion(state,'Ainda é difícil.');
+  const next=nextQuestion(state,'Também fico inseguro quando penso nisso.');
+  assert.match(checkpoint,/próximo passo|síntese|rascunho/i);
+  assert.doesNotMatch(next,/já temos material suficiente|já apareceu material suficiente/i);
+});
+
+test('assustar-se é reconhecido como emoção declarada sem criar diagnóstico',()=>{
+  const state=createConversation({mode:'feeling',depth:'medium'});
+  const response=nextQuestion(state,'Às vezes isso me assusta.');
+  assert.match(response,/emoção|palavra|acontecendo/i);
+  assert.deepEqual(buildStructuredSummary(state).emotions,['Às vezes isso me assusta.']);
+  assert.doesNotMatch(response,/transtorno|diagnóstico|psicose|mania/i);
 });
