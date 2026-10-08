@@ -21,7 +21,39 @@
   </header>
 
   <main class="app-shell">
-    <section id="home-view" class="card">
+    <section id="onboarding-view" class="card" aria-labelledby="onboarding-title">
+      <p class="eyebrow">Antes de testar</p>
+      <h1 id="onboarding-title">Ombro-amigo é uma ferramenta de preparação</h1>
+      <p class="muted">Leia estes pontos antes de escrever algo pessoal.</p>
+
+      <div class="ack-grid">
+        <article>
+          <strong>Não é psicoterapia</strong>
+          <p>O app não diagnostica, não prescreve e não substitui seu psicólogo.</p>
+        </article>
+        <article>
+          <strong>Seu texto fica local</strong>
+          <p>Nesta versão, conversa e rascunhos ficam somente neste navegador e não são enviados para nós.</p>
+        </article>
+        <article>
+          <strong>Você controla o conteúdo</strong>
+          <p>Você pode editar a síntese e apagar a conversa salva no aparelho.</p>
+        </article>
+        <article>
+          <strong>Não é serviço de crise</strong>
+          <p>Se houver perigo imediato, use a opção de ajuda urgente e procure atendimento humano.</p>
+        </article>
+      </div>
+
+      <button id="acknowledge-test" type="button">Entendi e quero testar</button>
+      <div class="onboarding-secondary">
+        <button id="onboarding-privacy" class="ghost" type="button">Como funciona a privacidade?</button>
+        <button class="ghost urgent-inline" type="button" data-urgent-help>Preciso de ajuda urgente</button>
+      </div>
+      <p class="muted small">Esta confirmação fica somente neste aparelho e serve apenas para não repetir este aviso a cada abertura.</p>
+    </section>
+
+    <section id="home-view" class="card hidden">
       <p class="eyebrow">Antes da sessão</p>
       <h1>O que você precisa hoje?</h1>
       <p class="muted">Você não precisa saber explicar tudo de uma vez.</p>
@@ -127,6 +159,7 @@
         <strong>Proteção técnica adicional</strong>
         <p>A política de segurança desta página bloqueia conexões iniciadas pelo aplicativo, como fetch, XHR e WebSocket. Nesta fase, o Ombro-amigo não possui endpoint para receber suas conversas.</p>
       </div>
+      <button id="review-onboarding" class="privacy-link ghost" type="button">Rever aviso inicial</button>
     </section>
   </main>
 
