@@ -51,6 +51,25 @@ Um teste de CI passando significa apenas que as medições são reproduzíveis e
 que as regras de segurança **não foram modificadas**; não significa aprovação
 clínica, desempenho suficiente nem capacidade de conversa natural.
 
+## 2.1 Resultados reais do baseline no holdout sintético
+
+Na execução de CI do commit \`b19dbd5\`, a suíte reportou **261 testes
+aprovados**. O conjunto de **256 frases sintéticas do holdout** teve:
+
+| Métrica | Resultado | Interpretação |
+|---|---:|---|
+| Macro-F1 da intenção candidata (oito classes) | **0,6758** | Classificação de hipótese, incluindo as hipóteses posteriormente rejeitadas |
+| Acurácia da intenção candidata | **67,58%** | Proporção de hipóteses corretas em frases sintéticas |
+| Precisão das ações aceitas | **96%** | 24 acertos entre 25 decisões aceitas; amostra pequena |
+| Cobertura das cinco classes acionáveis | **15%** | Reconhece poucas das intenções que poderia sugerir |
+| Falsos acionamentos em \`stop\`, \`skip\` ou \`other\` | **1** | Bloqueador de ativação: uma frase protegida recebeu sugestão indevida |
+| Abstenções | **231/256** | Política conservadora reduz cobertura e risco, mas não zera falsos positivos |
+
+**Decisão:** não conectar o classificador à UI, não alterar thresholds
+usando o holdout e não declarar segurança ou compreensão semântica. Uma
+classificação incorreta em classe protegida já impede habilitação automática.
+O conjunto sintético não representa a distribuição de relatos reais.
+
 ## 3. Laboratório experimental ONNX (opcional)
 
 O código em \`experiments/onnx-lab/\` pode comparar o baseline lexical com um
