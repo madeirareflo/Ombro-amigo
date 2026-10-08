@@ -4,7 +4,9 @@ import {
   loadLocalState,
   clearLocalState,
   saveAcknowledgement,
-  loadAcknowledgement
+  loadAcknowledgement,
+  getLocalDataStatus,
+  clearAllLocalData
 } from '../storage/local-store.js';
 import { urgentHelpGuidance } from '../safety/policy.js';
 import { copyText } from './clipboard.js';
@@ -26,6 +28,7 @@ const resumePanel=document.querySelector('#resume-panel');
 const resumeInfo=document.querySelector('#resume-info');
 const copyPanel=document.querySelector('#copy-panel');
 const copyStatus=document.querySelector('#copy-status');
+const localDataStatus=document.querySelector('#local-data-status');
 
 let session=null;
 let currentView='onboarding';
@@ -34,6 +37,7 @@ let summaryApproved=false;
 function show(view) {
   [onboardingView,home,conversationView,summaryView,privacyView,safetyView].forEach(node=>node.classList.add('hidden'));
   view.classList.remove('hidden');
+  if(view===privacyView) refreshLocalDataStatus();
   currentView=view===summaryView?'summary':view===conversationView?'conversation':view===privacyView?'privacy':view===safetyView?'safety':view===onboardingView?'onboarding':'home';
 }
 
@@ -114,6 +118,16 @@ function resumeSavedConversation() {
   } else {
     show(conversationView);
   }
+}
+
+function refreshLocalDataStatus() {
+  const status=getLocalDataStatus();
+  const parts=[];
+  parts.push(status.hasConversation
+    ? `Conversa salva: sim${status.savedAt ? ` · última gravação ${new Date(status.savedAt).toLocaleString('pt-BR')}` : ''}`
+    : 'Conversa salva: não');
+  parts.push(status.hasAcknowledgement ? 'Aviso inicial confirmado: sim' : 'Aviso inicial confirmado: não');
+  localDataStatus.textContent=parts.join(' · ');
 }
 
 function refreshResumePanel() {
@@ -226,6 +240,17 @@ document.querySelector('#acknowledge-test').addEventListener('click',()=>{
 });
 document.querySelector('#onboarding-privacy').addEventListener('click',()=>show(privacyView));
 document.querySelector('#review-onboarding').addEventListener('click',()=>show(onboardingView));
+document.querySelector('#delete-all-local').addEventListener('click',()=>{
+  if(!confirm('Apagar conversa, rascunho e confirmação deste teste neste navegador? Essa ação não pode ser desfeita.')) return;
+  clearAllLocalData();
+  session=null;
+  summaryText.value='';
+  summaryApproved=false;
+  copyPanel.classList.add('hidden');
+  copyStatus.textContent='';
+  messages.replaceChildren();
+  show(onboardingView);
+});
 document.querySelector('#open-privacy').addEventListener('click',()=>show(privacyView));
 document.querySelector('#privacy-link').addEventListener('click',()=>show(privacyView));
 document.querySelector('#privacy-back').addEventListener('click',()=>{
