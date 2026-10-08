@@ -188,3 +188,18 @@ test('resposta longa é organizada sem reescrever a experiência', () => {
   assert.match(question,/várias partes|aconteceu primeiro|levar à sessão/i);
   assert.doesNotMatch(question,/isso significa|você sente porque/i);
 });
+
+
+test('modo depois da sessão começa pelo que ficou para retomar', () => {
+  const state=createConversation({mode:'afterSession',depth:'light'});
+  assert.match(openingQuestion(state),/última sessão|registrar|retomar/i);
+});
+
+test('modo só registrar não transforma o registro em interrogatório', () => {
+  const state=createConversation({mode:'record',depth:'deep'});
+  openingQuestion(state);
+  const response=nextQuestion(state,'Quero lembrar que fiquei incomodado com uma fala.');
+  assert.match(response,/registrado|organizar|encerrar/i);
+  assert.doesNotMatch(response,/por quê|o que aconteceu depois|como você se sentiu/i);
+  assert.equal(state.entries.length,1);
+});
