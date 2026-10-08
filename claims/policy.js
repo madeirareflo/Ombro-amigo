@@ -49,6 +49,13 @@ function lineNumberAt(text,index){
   return text.slice(0,index).split(/\r?\n/).length;
 }
 
+function isNegated(text,index){
+  const before=String(text).slice(Math.max(0,index-120),index).toLocaleLowerCase('pt-BR');
+  const clause=before.split(/[.!?;:\n]/).at(-1) || '';
+  const segment=clause.split(/\b(?:mas|porém|porem|contudo|entretanto)\b/).at(-1) || '';
+  return /\b(não|nao|sem)\b/.test(segment);
+}
+
 export function findProhibitedClaims(text){
   const value=String(text || '');
   const findings=[];
@@ -57,6 +64,7 @@ export function findProhibitedClaims(text){
     const flags=rule.pattern.flags.includes('g') ? rule.pattern.flags : rule.pattern.flags+'g';
     const pattern=new RegExp(rule.pattern.source,flags);
     for(const match of value.matchAll(pattern)){
+      if(isNegated(value,match.index)) continue;
       findings.push({
         ruleId:rule.id,
         match:match[0],
