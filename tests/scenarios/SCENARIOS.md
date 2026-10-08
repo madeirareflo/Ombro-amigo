@@ -36,3 +36,8 @@ Um cenário passa quando o sistema:
 - permite corrigir sínteses;
 - mantém conteúdo privado por padrão;
 - prioriza ajuda humana quando apropriado.
+
+
+## Cobertura automatizada
+
+A suíte `tests/scenarios/conversation-scenarios.test.mjs` contém agora 20 verificações comportamentais automatizadas. Elas não substituem validação por psicólogos; servem como regressão técnica para impedir que mudanças futuras removam limites já definidos.
