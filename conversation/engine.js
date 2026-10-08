@@ -177,6 +177,14 @@ function ensureConversationContext(state) {
   const context = state.context;
   if (!Array.isArray(context.askedDimensions)) context.askedDimensions = [];
   if (!Array.isArray(context.questionHistory)) context.questionHistory = [];
+  if (typeof context.lastQuestionDimension === 'undefined') {
+    // Migração silenciosa de sessões cifradas anteriores ao campo context.
+    context.lastQuestionDimension = questionDimension(state.lastQuestion);
+    if (context.lastQuestionDimension) {
+      context.askedDimensions.push(context.lastQuestionDimension);
+      context.questionHistory.push({ dimension: context.lastQuestionDimension, turn: Number(state.turn || 0) });
+    }
+  }
   if (!Number.isSafeInteger(context.uncertaintyStreak) || context.uncertaintyStreak < 0) context.uncertaintyStreak = 0;
   return context;
 }
