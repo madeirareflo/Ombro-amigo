@@ -1,41 +1,35 @@
-const KEY='ombro-amigo.local-state.v2';
-const LEGACY_KEY='ombro-amigo.session.v1';
+const LEGACY_KEY='ombro-amigo.local-state.v2';
+const OLDEST_KEY='ombro-amigo.session.v1';
 const ACK_KEY='ombro-amigo.acknowledgement.v1';
 
 function browserStorage() {
   return typeof localStorage === 'undefined' ? null : localStorage;
 }
 
-export function saveLocalState(state, storage=browserStorage()) {
-  if (!storage) return null;
-  const payload={
-    version:2,
-    savedAt:new Date().toISOString(),
-    session:state?.session || null,
-    view:state?.view || 'conversation',
-    summaryDraft:String(state?.summaryDraft || ''),
-    summaryModel:state?.summaryModel || null
-  };
-  storage.setItem(KEY,JSON.stringify(payload));
-  return payload;
-}
-
-export function loadLocalState(storage=browserStorage()) {
+export function readLegacyConversationState(storage=browserStorage()) {
   if (!storage) return null;
   try {
-    const raw=storage.getItem(KEY);
+    const raw=storage.getItem(LEGACY_KEY);
     if(raw) {
       const parsed=JSON.parse(raw);
-      if(parsed?.version===2 && parsed?.session) return parsed;
+      if(parsed?.session) {
+        return {
+          version:Number(parsed.version || 2),
+          savedAt:parsed.savedAt || null,
+          session:parsed.session,
+          view:parsed.view || 'conversation',
+          summaryDraft:String(parsed.summaryDraft || ''),
+          summaryModel:parsed.summaryModel || null
+        };
+      }
     }
 
-    const legacy=storage.getItem(LEGACY_KEY);
-    if(!legacy) return null;
-    const session=JSON.parse(legacy);
+    const oldest=storage.getItem(OLDEST_KEY);
+    if(!oldest) return null;
     return {
       version:1,
       savedAt:null,
-      session,
+      session:JSON.parse(oldest),
       view:'conversation',
       summaryDraft:'',
       summaryModel:null
@@ -45,12 +39,15 @@ export function loadLocalState(storage=browserStorage()) {
   }
 }
 
-export function clearLocalState(storage=browserStorage()) {
+export function clearLegacyConversationState(storage=browserStorage()) {
   if (!storage) return;
-  storage.removeItem(KEY);
   storage.removeItem(LEGACY_KEY);
+  storage.removeItem(OLDEST_KEY);
 }
 
+export function hasLegacyConversationState(storage=browserStorage()) {
+  return Boolean(readLegacyConversationState(storage));
+}
 
 export function saveAcknowledgement(storage=browserStorage()) {
   if (!storage) return null;
@@ -77,22 +74,4 @@ export function loadAcknowledgement(storage=browserStorage()) {
 export function clearAcknowledgement(storage=browserStorage()) {
   if (!storage) return;
   storage.removeItem(ACK_KEY);
-}
-
-
-export function getLocalDataStatus(storage=browserStorage()) {
-  const state=loadLocalState(storage);
-  const acknowledgement=loadAcknowledgement(storage);
-  return {
-    hasConversation:Boolean(state?.session),
-    savedAt:state?.savedAt || null,
-    hasAcknowledgement:Boolean(acknowledgement),
-    acceptedAt:acknowledgement?.acceptedAt || null
-  };
-}
-
-export function clearAllLocalData(storage=browserStorage()) {
-  if (!storage) return;
-  clearLocalState(storage);
-  clearAcknowledgement(storage);
 }
