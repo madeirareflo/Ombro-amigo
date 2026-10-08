@@ -44,7 +44,7 @@ test('menção a pensamento gera pergunta sobre o pensamento declarado', () => {
 test('autojulgamento não é reforçado como rótulo', () => {
   const state = createConversation({ mode: 'session', depth: 'medium' });
   const question = chooseAdaptiveQuestion(state, 'Sou ridículo por ter feito isso.');
-  assert.match(question, /aconteceu|fato|situação/i);
+  assert.match(question, /descrevendo desse jeito|tirarmos o rótulo/i);
   assert.doesNotMatch(question, /você é|realmente ridículo/i);
 });
 
