@@ -31,7 +31,13 @@ h1,h2{letter-spacing:-.025em;line-height:1.16;margin:.1rem 0 .65rem}h1{font-size
 .quiet-actions,.home-footer-actions{display:flex;justify-content:space-between;gap:1rem;margin-top:.8rem;flex-wrap:wrap}
 .resume-panel{display:grid;gap:.8rem;margin:1rem 0;padding:1rem;border:1px solid var(--border);border-radius:18px;background:#f8fbfa}.resume-panel p{margin:.3rem 0 0}.resume-actions{display:flex;gap:.5rem;flex-wrap:wrap}
 .primary-paths{display:grid;gap:.7rem;margin:1.15rem 0}.primary-paths button{text-align:left;padding:1rem 1.05rem}.primary-paths span{display:block;font-size:1rem}.primary-paths small{display:block;margin-top:.25rem;font-weight:450;opacity:.82;line-height:1.4}
-.more-paths,.pace-details{border-top:1px solid var(--border);padding-top:.8rem;margin-top:.85rem}.more-paths summary,.pace-details summary{cursor:pointer;color:var(--accent);font-weight:650;padding:.3rem 0;min-height:44px;display:flex;align-items:center}.secondary-paths{display:grid;gap:.55rem;margin-top:.7rem}
+.more-paths,.pace-details{border-top:1px solid var(--border);padding-top:.8rem;margin-top:.85rem}
+.more-paths summary,.pace-details summary{cursor:pointer;color:var(--accent);font-weight:650;padding:.3rem 0;min-height:44px;display:flex;align-items:center;gap:.35rem;list-style:none}
+.more-paths summary::-webkit-details-marker,.pace-details summary::-webkit-details-marker{display:none}
+.more-paths summary::after,.pace-details summary::after{content:"⌄";margin-left:auto;font-size:1rem;line-height:1;color:var(--accent)}
+.more-paths[open] summary::after,.pace-details[open] summary::after{content:"⌃"}
+.summary-inline{display:inline-flex;align-items:baseline;gap:.28rem;flex-wrap:wrap}
+.secondary-paths{display:grid;gap:.55rem;margin-top:.7rem}
 .depth-fieldset{border:0;padding:.65rem 0 0;margin:0;display:grid;gap:.55rem}.depth-fieldset label{display:flex;gap:.55rem;align-items:center}.depth-fieldset input{accent-color:var(--accent)}
 .conversation-header,.actions,.summary-actions{display:flex;gap:.65rem;align-items:center;flex-wrap:wrap}.conversation-header{justify-content:space-between;margin-bottom:.8rem}
 .pill{background:var(--soft);color:var(--accent);padding:.32rem .58rem;border-radius:999px;font-size:.76rem;font-weight:700}
