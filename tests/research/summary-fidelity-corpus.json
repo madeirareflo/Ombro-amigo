@@ -1,0 +1,115 @@
+[
+  {
+    "id":"FID-001",
+    "mode":"event",
+    "depth":"medium",
+    "purpose":"fato e emoção declarados",
+    "turns":[
+      "Briguei com meu namorado ontem.",
+      "Fiquei com medo depois da conversa."
+    ]
+  },
+  {
+    "id":"FID-002",
+    "mode":"session",
+    "depth":"medium",
+    "purpose":"dificuldade de falar",
+    "turns":[
+      "Eu travo quando tento falar sobre minha família.",
+      "Tenho vergonha de contar isso na sessão."
+    ]
+  },
+  {
+    "id":"FID-003",
+    "mode":"feeling",
+    "depth":"medium",
+    "purpose":"incerteza não deve virar claim",
+    "turns":[
+      "Não sei",
+      "Não sei"
+    ]
+  },
+  {
+    "id":"FID-004",
+    "mode":"feeling",
+    "depth":"medium",
+    "purpose":"pedido de diagnóstico não deve virar claim",
+    "turns":[
+      "Você acha que eu tenho depressão?"
+    ]
+  },
+  {
+    "id":"FID-005",
+    "mode":"session",
+    "depth":"medium",
+    "purpose":"correção de interpretação não deve virar claim",
+    "turns":[
+      "Briguei com uma pessoa ontem.",
+      "Não foi isso, você entendeu errado."
+    ]
+  },
+  {
+    "id":"FID-006",
+    "mode":"session",
+    "depth":"deep",
+    "purpose":"pedido de parada não deve virar claim",
+    "turns":[
+      "Não quero aprofundar."
+    ]
+  },
+  {
+    "id":"FID-007",
+    "mode":"record",
+    "depth":"deep",
+    "purpose":"modo registrar preserva texto declarado",
+    "turns":[
+      "Quero lembrar que fiquei incomodado com uma fala."
+    ]
+  },
+  {
+    "id":"FID-008",
+    "mode":"afterSession",
+    "depth":"light",
+    "purpose":"registro pós-sessão",
+    "turns":[
+      "Fiquei pensando numa pergunta que apareceu na última sessão."
+    ]
+  },
+  {
+    "id":"FID-009",
+    "mode":"session",
+    "depth":"deep",
+    "purpose":"tema sensível é preservado sem inventar detalhes",
+    "turns":[
+      "Quero falar de um abuso que aconteceu."
+    ]
+  },
+  {
+    "id":"FID-010",
+    "mode":"event",
+    "depth":"medium",
+    "purpose":"repetição não cria claim novo",
+    "turns":[
+      "Briguei com meu namorado ontem.",
+      "Briguei com meu namorado ontem."
+    ]
+  },
+  {
+    "id":"FID-011",
+    "mode":"session",
+    "depth":"medium",
+    "purpose":"pergunta sobre reação do psicólogo é excluída",
+    "turns":[
+      "Meu psicólogo vai me julgar quando eu contar?"
+    ]
+  },
+  {
+    "id":"FID-012",
+    "mode":"session",
+    "depth":"medium",
+    "purpose":"vínculo exclusivo permanece como dificuldade declarada sem amplificação",
+    "turns":[
+      "Só consigo falar com você sobre isso."
+    ]
+  }
+]

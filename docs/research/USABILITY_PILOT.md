@@ -66,3 +66,10 @@ Só avançar de histórias fictícias para uso pessoal quando:
 - tarefas essenciais de apagar/corrigir/pular forem compreendidas;
 - participantes entenderem corretamente o papel do produto;
 - riscos de armazenamento estiverem documentados e mitigados.
+
+
+## Execução operacional
+
+O roteiro detalhado da Fase A está em [PILOT_RUNBOOK.md](PILOT_RUNBOOK.md).
+
+A revisão de acessibilidade deve combinar contratos automatizados com a sessão manual descrita em [ACCESSIBILITY_CHECKLIST.md](ACCESSIBILITY_CHECKLIST.md). Passar nos testes estruturais não equivale a certificação de acessibilidade.
