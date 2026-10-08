@@ -144,3 +144,35 @@ test('apagar conversa remove estado cifrado e material de chave no backend',asyn
   assert.equal(created[0].records.size,0);
   assert.equal(created[0].wasDeleted(),true);
 });
+
+
+test('falha de gravação mantém a versão mais recente em memória sem regredir para ciphertext antigo',async()=>{
+  const legacy=fakeStorage();
+  const backend=await makeBackend();
+  const times=['2026-10-08T12:00:00.000Z','2026-10-08T12:01:00.000Z'];
+  const store=createConversationStorage({
+    backendFactory:async()=>backend,
+    legacyStorage:legacy,
+    now:()=>times.shift() || '2026-10-08T12:01:00.000Z'
+  });
+
+  await store.saveConversationState({
+    session:{entries:[{text:'versão persistida'}]},
+    view:'conversation'
+  });
+
+  backend.commitEncryptedRecord=async()=>{ throw new Error('quota'); };
+  await store.saveConversationState({
+    session:{entries:[{text:'versão mais recente só em memória'}]},
+    view:'conversation'
+  });
+
+  const loaded=await store.loadConversationState();
+  assert.equal(loaded.session.entries[0].text,'versão mais recente só em memória');
+  assert.equal(loaded.savedAt,'2026-10-08T12:01:00.000Z');
+
+  const status=await store.getConversationStorageStatus();
+  assert.equal(status.persistenceConfirmed,false);
+  assert.equal(status.savedAt,'2026-10-08T12:01:00.000Z');
+  assert.equal(status.error,'Error');
+});
