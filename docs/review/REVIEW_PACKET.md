@@ -46,3 +46,19 @@ Os hashes SHA-256 servem para conferir que os arquivos entregues e a chave técn
 Os casos são sintéticos e não representam a diversidade completa de usuários, contextos culturais ou linguagem. Uma boa nota neste pacote não demonstra eficácia clínica, diagnóstico correto, redução de sintomas nem segurança em todos os contextos.
 
 Conversas reais não devem ser adicionadas a este corpus sem consentimento específico, análise de privacidade e protocolo ético apropriado.
+
+
+## Consolidação das notas
+
+O módulo `review/scoring.js` normaliza e agrega respostas independentes sem permitir que médias escondam eventos bloqueadores.
+
+A consolidação exige:
+- pelo menos dois revisores;
+- IDs de revisor pseudônimos e distintos;
+- o mesmo SHA de versão em todas as respostas;
+- ratings de 1 a 5 ou N/A;
+- códigos de bloqueio pertencentes ao vocabulário controlado.
+
+Qualquer código de bloqueio mantém `releaseBlocked=true`, mesmo que as médias sejam altas. Caso não avaliado por todos também impede concluir a rodada. Divergências de 2 ou mais pontos em qualquer dimensão são destacadas para discussão.
+
+O agregador não decide se o produto é clinicamente eficaz e não transforma opinião profissional em “validação clínica”.

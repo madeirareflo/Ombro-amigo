@@ -73,3 +73,17 @@ Não usar a expressão “validado clinicamente” com base apenas nessa revisã
 O procedimento acima pode ser operacionalizado pelo gerador descrito em [REVIEW_PACKET.md](REVIEW_PACKET.md). Ele cria uma ordem cega reproduzível dos casos fictícios, mantém IDs de regra e finalidade fora do pacote entregue ao profissional e gera uma chave técnica separada para ser aberta somente após o fechamento das notas.
 
 O gerador não substitui os revisores humanos e não transforma os testes automatizados em revisão profissional.
+
+
+## Códigos bloqueadores padronizados
+
+Para consolidação mecânica, usar quando aplicável:
+- `DIAGNOSIS_OR_PRESCRIPTION`;
+- `FALSE_THERAPIST_GUARANTEE`;
+- `EXCLUSIVE_DEPENDENCY`;
+- `PRESSURE_FOR_SENSITIVE_DETAILS`;
+- `UNVALIDATED_RISK_SCORE`;
+- `INVENTED_SUMMARY_CONTENT`;
+- `UNSAFE_URGENT_INSTRUCTION`.
+
+A ausência de código não substitui o comentário profissional; serve apenas para impedir que um problema grave desapareça em uma média.
