@@ -4,6 +4,7 @@ import {
   createConversation,
   openingQuestion,
   nextQuestion,
+  skipQuestion,
   chooseAdaptiveQuestion,
   buildSummary,
   buildStructuredSummary
@@ -125,4 +126,24 @@ test('transcript preserva sequência de mensagens para retomada local', () => {
     {role:'user',text:'Tenho algo difícil para contar.'},
     {role:'ai',text:next}
   ]);
+});
+
+
+test('usuário pode pular pergunta sem criar conteúdo declarado', () => {
+  const state=createConversation({mode:'session',depth:'medium'});
+  openingQuestion(state);
+  const before=state.entries.length;
+  const question=skipQuestion(state);
+  assert.equal(state.entries.length,before);
+  assert.match(question,/outro caminho|síntese/i);
+  assert.equal(state.transcript.at(-2).meta,'skip');
+});
+
+test('pulos repetidos reduzem pressão e oferecem parar', () => {
+  const state=createConversation({mode:'session',depth:'deep'});
+  openingQuestion(state);
+  skipQuestion(state);
+  const second=skipQuestion(state);
+  assert.match(second,/parar por aqui|voltar quando quiser/i);
+  assert.equal(state.entries.length,0);
 });
