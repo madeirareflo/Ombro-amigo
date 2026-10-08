@@ -19,16 +19,16 @@ jobs:
       - run: npm run check
       - run: npm run build:pages
 
-  browser-storage:
+  browser-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install Playwright test runner
-        run: npm install --no-save --package-lock=false @playwright/test@1.55.1
+      - name: Install browser test tools
+        run: npm install --no-save --package-lock=false @playwright/test@1.55.1 @axe-core/playwright@4.10.2
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Validate real-browser secure storage and offline reload
-        run: npx playwright test --config=playwright.config.mjs tests/browser/storage-real-browser.spec.mjs
+      - name: Validate storage, accessibility and offline behavior in Chromium
+        run: npx playwright test --config=playwright.config.mjs tests/browser/storage-real-browser.spec.mjs tests/browser/accessibility-real-browser.spec.mjs
