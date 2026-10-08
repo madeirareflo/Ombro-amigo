@@ -10,17 +10,18 @@ const DB_VERSION=1;
 const STATE_STORE='state';
 const KEY_STORE='keys';
 const STATE_ID='conversation';
+const BACKUP_ID='conversation-backup';
 const KEY_ID='conversation-key';
 
-let backendPromise=null;
-let memoryState=null;
-let lastError=null;
-
-function hasSecureApis(){
-  return Boolean(globalThis.indexedDB && globalThis.crypto?.subtle && globalThis.crypto?.getRandomValues);
+function browserStorage(){
+  return typeof localStorage==='undefined' ? null : localStorage;
 }
 
-function openDb(indexedDbApi=globalThis.indexedDB){
+function secureApisAvailable(indexedDbApi=globalThis.indexedDB,cryptoApi=globalThis.crypto){
+  return Boolean(indexedDbApi && cryptoApi?.subtle && typeof cryptoApi?.getRandomValues==='function');
+}
+
+function openDb(indexedDbApi){
   return new Promise((resolve,reject)=>{
     const request=indexedDbApi.open(DB_NAME,DB_VERSION);
     request.onupgradeneeded=()=>{
@@ -48,44 +49,71 @@ function idbOperation(db,storeName,mode,operation){
   });
 }
 
-const idbGet=(db,store,key)=>idbOperation(db,store,'readonly',s=>s.get(key));
-const idbPut=(db,store,key,value)=>idbOperation(db,store,'readwrite',s=>s.put(value,key));
-const idbDelete=(db,store,key)=>idbOperation(db,store,'readwrite',s=>s.delete(key));
+const idbGet=(db,store,key)=>idbOperation(db,store,'readonly',store=>store.get(key));
+const idbPut=(db,store,key,value)=>idbOperation(db,store,'readwrite',target=>target.put(value,key));
 
-async function getOrCreateKey(db){
-  const existing=await idbGet(db,KEY_STORE,KEY_ID);
-  if(existing) return existing;
-  const key=await generateLocalEncryptionKey();
-  await idbPut(db,KEY_STORE,KEY_ID,key);
-  return key;
+function idbCommitState(db,record){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(STATE_STORE,'readwrite');
+    const store=tx.objectStore(STATE_STORE);
+    const current=store.get(STATE_ID);
+
+    current.onerror=()=>reject(current.error || new Error('IndexedDB state read failed'));
+    current.onsuccess=()=>{
+      if(current.result) store.put(current.result,BACKUP_ID);
+      store.put(record,STATE_ID);
+    };
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error || new Error('IndexedDB state commit failed'));
+    tx.onabort=()=>reject(tx.error || new Error('IndexedDB state commit aborted'));
+  });
 }
 
-async function createBackend(){
-  if(!hasSecureApis()){
-    lastError='secure-apis-unavailable';
+function idbDeleteAllSensitive(db){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction([STATE_STORE,KEY_STORE],'readwrite');
+    const state=tx.objectStore(STATE_STORE);
+    const keys=tx.objectStore(KEY_STORE);
+    state.delete(STATE_ID);
+    state.delete(BACKUP_ID);
+    keys.delete(KEY_ID);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error || new Error('IndexedDB secure deletion failed'));
+    tx.onabort=()=>reject(tx.error || new Error('IndexedDB secure deletion aborted'));
+  });
+}
+
+async function createDefaultBackend(){
+  const indexedDbApi=globalThis.indexedDB;
+  const cryptoApi=globalThis.crypto;
+  if(!secureApisAvailable(indexedDbApi,cryptoApi)){
     return {mode:'memory-only',persistent:false,encrypted:false};
   }
 
-  try{
-    const db=await openDb();
-    const key=await getOrCreateKey(db);
-    lastError=null;
-    return {mode:'encrypted-indexeddb',persistent:true,encrypted:true,db,key};
-  }catch(error){
-    lastError=error?.name || 'secure-storage-init-failed';
-    return {mode:'memory-only',persistent:false,encrypted:false};
+  const db=await openDb(indexedDbApi);
+  let key=await idbGet(db,KEY_STORE,KEY_ID);
+  if(!key){
+    key=await generateLocalEncryptionKey(cryptoApi);
+    await idbPut(db,KEY_STORE,KEY_ID,key);
   }
+
+  return {
+    mode:'encrypted-indexeddb',
+    persistent:true,
+    encrypted:true,
+    key,
+    cryptoApi,
+    getRecord:id=>idbGet(db,STATE_STORE,id),
+    commitEncryptedRecord:record=>idbCommitState(db,record),
+    deleteAllSensitive:()=>idbDeleteAllSensitive(db),
+    close:()=>db.close()
+  };
 }
 
-async function backend(){
-  if(!backendPromise) backendPromise=createBackend();
-  return backendPromise;
-}
-
-function buildPayload(state){
+function buildPayload(state,now,{preserveSavedAt=false}={}){
   return {
     version:3,
-    savedAt:new Date().toISOString(),
+    savedAt:preserveSavedAt && state?.savedAt ? state.savedAt : now(),
     session:state?.session || null,
     view:state?.view || 'conversation',
     summaryDraft:String(state?.summaryDraft || ''),
@@ -93,148 +121,266 @@ function buildPayload(state){
   };
 }
 
-async function saveToEncryptedBackend(target,payload){
-  const encrypted=await encryptJson(payload,target.key);
-  await idbPut(target.db,STATE_STORE,STATE_ID,{
-    id:STATE_ID,
-    savedAt:payload.savedAt,
-    encrypted
-  });
+async function decryptRecord(record,key,cryptoApi){
+  if(!record?.encrypted) return null;
+  const value=await decryptJson(record.encrypted,key,cryptoApi);
+  return value?.session ? value : null;
 }
 
-async function readEncryptedRecord(target){
-  return idbGet(target.db,STATE_STORE,STATE_ID);
+export async function decryptEncryptedState({primary,backup},key,cryptoApi=globalThis.crypto){
+  let primaryError=null;
+  if(primary?.encrypted){
+    try{
+      return {value:await decryptRecord(primary,key,cryptoApi),recoveredFromBackup:false};
+    }catch(error){
+      primaryError=error;
+    }
+  }
+
+  if(backup?.encrypted){
+    try{
+      return {value:await decryptRecord(backup,key,cryptoApi),recoveredFromBackup:true};
+    }catch(error){
+      if(!primaryError) primaryError=error;
+    }
+  }
+
+  if(primaryError) throw primaryError;
+  return {value:null,recoveredFromBackup:false};
 }
 
-async function migrateLegacyIfNeeded(target){
-  const legacy=readLegacyConversationState();
+export async function migrateLegacySafely(legacy,persistEncrypted,clearLegacy){
   if(!legacy) return false;
+  await persistEncrypted(legacy);
+  clearLegacy();
+  return true;
+}
 
-  if(target.mode==='encrypted-indexeddb'){
-    const existing=await readEncryptedRecord(target);
-    if(!existing) await saveToEncryptedBackend(target,buildPayload(legacy));
-    clearLegacyConversationState();
+export function createConversationStorage({
+  backendFactory=createDefaultBackend,
+  legacyStorage=browserStorage(),
+  now=()=>new Date().toISOString()
+}={}){
+  let backendPromise=null;
+  let memoryState=null;
+  let lastError=null;
+  let recoveredFromBackup=false;
+  let writeQueue=Promise.resolve();
+
+  async function getBackend(){
+    if(!backendPromise){
+      backendPromise=Promise.resolve()
+        .then(()=>backendFactory())
+        .catch(error=>{
+          lastError=error?.name || 'secure-storage-init-failed';
+          return {mode:'memory-only',persistent:false,encrypted:false};
+        });
+    }
+    return backendPromise;
+  }
+
+  function enqueue(task){
+    const run=writeQueue.then(task,task);
+    writeQueue=run.catch(()=>{});
+    return run;
+  }
+
+  async function readEncryptedState(target){
+    const [primary,backup]=await Promise.all([
+      target.getRecord(STATE_ID),
+      target.getRecord(BACKUP_ID)
+    ]);
+    const result=await decryptEncryptedState({primary,backup},target.key,target.cryptoApi);
+    recoveredFromBackup=result.recoveredFromBackup;
+    if(result.recoveredFromBackup) lastError='recovered-from-backup';
+    return result.value;
+  }
+
+  async function writeEncryptedState(target,payload){
+    const encrypted=await encryptJson(payload,target.key,target.cryptoApi);
+    await target.commitEncryptedRecord({
+      id:STATE_ID,
+      savedAt:payload.savedAt,
+      encrypted
+    });
+  }
+
+  async function migrateLegacyIfNeeded(target){
+    const legacy=readLegacyConversationState(legacyStorage);
+    if(!legacy) return false;
+
+    if(target.mode!=='encrypted-indexeddb'){
+      memoryState=buildPayload(legacy,now,{preserveSavedAt:true});
+      return false;
+    }
+
+    try{
+      const existing=await readEncryptedState(target);
+      if(existing?.session){
+        clearLegacyConversationState(legacyStorage);
+        return true;
+      }
+    }catch{
+      // A cópia legada continua sendo a fonte de recuperação e só será
+      // removida depois de uma nova gravação cifrada confirmada.
+    }
+
+    const payload=buildPayload(legacy,now,{preserveSavedAt:true});
+    await migrateLegacySafely(
+      payload,
+      value=>writeEncryptedState(target,value),
+      ()=>clearLegacyConversationState(legacyStorage)
+    );
+    memoryState=null;
+    recoveredFromBackup=false;
+    lastError=null;
     return true;
   }
 
-  if(!memoryState) memoryState=buildPayload(legacy);
-  return false;
-}
-
-export async function initializeConversationStorage(){
-  const target=await backend();
-  try{
-    await migrateLegacyIfNeeded(target);
-  }catch(error){
-    lastError=error?.name || 'legacy-migration-failed';
-  }
-  return getConversationStorageStatus();
-}
-
-export async function saveConversationState(state){
-  const payload=buildPayload(state);
-  const target=await backend();
-
-  if(target.mode==='encrypted-indexeddb'){
+  async function initialize(){
+    const target=await getBackend();
     try{
-      await saveToEncryptedBackend(target,payload);
-      clearLegacyConversationState();
-      lastError=null;
-      return payload;
+      await migrateLegacyIfNeeded(target);
     }catch(error){
-      lastError=error?.name || 'secure-save-failed';
+      lastError=error?.name || 'legacy-migration-failed';
+      const legacy=readLegacyConversationState(legacyStorage);
+      if(legacy) memoryState=buildPayload(legacy,now,{preserveSavedAt:true});
+    }
+    return status();
+  }
+
+  async function save(state){
+    const payload=buildPayload(state,now);
+    return enqueue(async()=>{
+      const target=await getBackend();
+
+      if(target.mode==='encrypted-indexeddb'){
+        try{
+          await writeEncryptedState(target,payload);
+          clearLegacyConversationState(legacyStorage);
+          memoryState=null;
+          recoveredFromBackup=false;
+          lastError=null;
+          return payload;
+        }catch(error){
+          lastError=error?.name || 'secure-save-failed';
+          memoryState=payload;
+          return payload;
+        }
+      }
+
       memoryState=payload;
       return payload;
-    }
+    });
   }
 
-  memoryState=payload;
-  return payload;
-}
+  async function load(){
+    await writeQueue;
+    const target=await getBackend();
 
-export async function loadConversationState(){
-  const target=await backend();
+    if(target.mode==='encrypted-indexeddb'){
+      try{
+        const value=await readEncryptedState(target);
+        if(value){
+          if(!recoveredFromBackup) lastError=null;
+          return value;
+        }
+      }catch(error){
+        lastError=error?.name || 'secure-load-failed';
+      }
 
-  if(target.mode==='encrypted-indexeddb'){
-    try{
-      const record=await readEncryptedRecord(target);
-      if(!record?.encrypted) return null;
-      const value=await decryptJson(record.encrypted,target.key);
-      lastError=null;
-      return value?.session ? value : null;
-    }catch(error){
-      lastError=error?.name || 'secure-load-failed';
+      if(memoryState) return memoryState;
+      const legacy=readLegacyConversationState(legacyStorage);
+      if(legacy){
+        memoryState=buildPayload(legacy,now,{preserveSavedAt:true});
+        return memoryState;
+      }
+      return null;
+    }
+
+    if(memoryState) return memoryState;
+    const legacy=readLegacyConversationState(legacyStorage);
+    if(legacy){
+      memoryState=buildPayload(legacy,now,{preserveSavedAt:true});
       return memoryState;
     }
+    return null;
   }
 
-  if(memoryState) return memoryState;
-  const legacy=readLegacyConversationState();
-  if(legacy) {
-    memoryState=buildPayload(legacy);
-    return memoryState;
-  }
-  return null;
-}
+  async function clear(){
+    return enqueue(async()=>{
+      const target=await getBackend();
+      memoryState=null;
+      recoveredFromBackup=false;
 
-export async function clearConversationState(){
-  const target=await backend();
-  memoryState=null;
-  clearLegacyConversationState();
+      if(target.mode==='encrypted-indexeddb'){
+        try{
+          await target.deleteAllSensitive();
+          target.close?.();
+          backendPromise=null;
+        }catch(error){
+          lastError=error?.name || 'secure-delete-failed';
+          clearLegacyConversationState(legacyStorage);
+          throw error;
+        }
+      }
 
-  if(target.mode==='encrypted-indexeddb'){
-    try{
-      await idbDelete(target.db,STATE_STORE,STATE_ID);
+      clearLegacyConversationState(legacyStorage);
       lastError=null;
-    }catch(error){
-      lastError=error?.name || 'secure-delete-failed';
-    }
+      return true;
+    });
   }
-}
 
-export async function clearAllSensitiveState(){
-  const target=await backend();
-  memoryState=null;
-  clearLegacyConversationState();
+  async function status(){
+    await writeQueue;
+    const target=await getBackend();
+    let hasConversation=Boolean(memoryState?.session);
+    let savedAt=memoryState?.savedAt || null;
 
-  if(target.mode==='encrypted-indexeddb'){
-    try{
-      await idbDelete(target.db,STATE_STORE,STATE_ID);
-      await idbDelete(target.db,KEY_STORE,KEY_ID);
-      target.db.close();
-      backendPromise=null;
-      lastError=null;
-    }catch(error){
-      lastError=error?.name || 'secure-clear-all-failed';
+    if(target.mode==='encrypted-indexeddb'){
+      try{
+        const [primary,backup]=await Promise.all([
+          target.getRecord(STATE_ID),
+          target.getRecord(BACKUP_ID)
+        ]);
+        const record=primary || backup;
+        if(record?.encrypted){
+          hasConversation=true;
+          savedAt=record.savedAt || savedAt;
+        }
+      }catch(error){
+        lastError=error?.name || 'secure-status-failed';
+      }
     }
-  }
-}
 
-export async function getConversationStorageStatus(){
-  const target=await backend();
-  let hasConversation=false;
-  let savedAt=null;
-
-  if(target.mode==='encrypted-indexeddb'){
-    try{
-      const record=await readEncryptedRecord(target);
-      hasConversation=Boolean(record?.encrypted);
-      savedAt=record?.savedAt || null;
-    }catch(error){
-      lastError=error?.name || 'secure-status-failed';
-    }
-  }else if(memoryState){
-    hasConversation=Boolean(memoryState.session);
-    savedAt=memoryState.savedAt || null;
+    return {
+      hasConversation,
+      savedAt,
+      mode:target.mode,
+      encrypted:target.encrypted,
+      persistent:target.persistent,
+      keyStrategy:target.encrypted ? 'device-bound-non-extractable-same-origin' : 'none',
+      recoveredFromBackup,
+      legacyPlaintextPresent:hasLegacyConversationState(legacyStorage),
+      error:lastError
+    };
   }
 
   return {
-    hasConversation,
-    savedAt,
-    mode:target.mode,
-    encrypted:target.encrypted,
-    persistent:target.persistent,
-    legacyPlaintextPresent:hasLegacyConversationState(),
-    error:lastError
+    initializeConversationStorage:initialize,
+    saveConversationState:save,
+    loadConversationState:load,
+    clearConversationState:clear,
+    clearAllSensitiveState:clear,
+    getConversationStorageStatus:status
   };
 }
+
+const defaultStore=createConversationStorage();
+
+export const initializeConversationStorage=(...args)=>defaultStore.initializeConversationStorage(...args);
+export const saveConversationState=(...args)=>defaultStore.saveConversationState(...args);
+export const loadConversationState=(...args)=>defaultStore.loadConversationState(...args);
+export const clearConversationState=(...args)=>defaultStore.clearConversationState(...args);
+export const clearAllSensitiveState=(...args)=>defaultStore.clearAllSensitiveState(...args);
+export const getConversationStorageStatus=(...args)=>defaultStore.getConversationStorageStatus(...args);

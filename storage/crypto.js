@@ -32,7 +32,14 @@ export async function encryptJson(value,key,cryptoApi=globalThis.crypto){
 
 export async function decryptJson(record,key,cryptoApi=globalThis.crypto){
   const api=requireCrypto(cryptoApi);
-  if(record?.algorithm!=='AES-GCM' || !Array.isArray(record?.iv) || !Array.isArray(record?.ciphertext)){
+  if(
+    record?.version!==1
+    || record?.algorithm!=='AES-GCM'
+    || !Array.isArray(record?.iv)
+    || record.iv.length!==12
+    || !Array.isArray(record?.ciphertext)
+    || record.ciphertext.length<16
+  ){
     throw new Error('Invalid encrypted record');
   }
   const iv=Uint8Array.from(record.iv);
