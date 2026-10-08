@@ -7,6 +7,7 @@ import {
   loadAcknowledgement
 } from '../storage/local-store.js';
 import { urgentHelpGuidance } from '../safety/policy.js';
+import { copyText } from './clipboard.js';
 
 const onboardingView=document.querySelector('#onboarding-view');
 const home=document.querySelector('#home-view');
@@ -23,9 +24,12 @@ const depthLabel=document.querySelector('#depth-label');
 const summaryText=document.querySelector('#summary-text');
 const resumePanel=document.querySelector('#resume-panel');
 const resumeInfo=document.querySelector('#resume-info');
+const copyPanel=document.querySelector('#copy-panel');
+const copyStatus=document.querySelector('#copy-status');
 
 let session=null;
 let currentView='onboarding';
+let summaryApproved=false;
 
 function show(view) {
   [onboardingView,home,conversationView,summaryView,privacyView,safetyView].forEach(node=>node.classList.add('hidden'));
@@ -88,6 +92,9 @@ function start(mode) {
   show(conversationView);
   addMessage('ai',openingQuestion(session));
   summaryText.value='';
+  summaryApproved=false;
+  copyPanel.classList.add('hidden');
+  copyStatus.textContent='';
   persist('conversation');
 }
 
@@ -98,6 +105,9 @@ function resumeSavedConversation() {
   depthLabel.textContent=depthName(session.depth);
   renderConversation(session);
   summaryText.value=saved.summaryDraft || '';
+  summaryApproved=false;
+  copyPanel.classList.add('hidden');
+  copyStatus.textContent='';
   if(saved.view==='summary') {
     if(!summaryText.value) summaryText.value=buildSummary(session);
     show(summaryView);
@@ -142,6 +152,9 @@ function forgetConversation() {
   clearLocalState();
   session=null;
   summaryText.value='';
+  summaryApproved=false;
+  copyPanel.classList.add('hidden');
+  copyStatus.textContent='';
   messages.replaceChildren();
   refreshResumePanel();
   show(home);
@@ -165,6 +178,9 @@ replyForm.addEventListener('submit',event=>{
 document.querySelector('#say-this').addEventListener('click',()=>{
   if(!session)return;
   summaryText.value=buildSummary(session);
+  summaryApproved=false;
+  copyPanel.classList.add('hidden');
+  copyStatus.textContent='';
   show(summaryView);
   persist('summary');
 });
@@ -176,12 +192,24 @@ document.querySelector('#back-home').addEventListener('click',()=>{
 });
 
 document.querySelector('#accept-summary').addEventListener('click',()=>{
+  summaryApproved=true;
+  copyPanel.classList.remove('hidden');
+  copyStatus.textContent='A síntese continua somente neste aparelho até você escolher copiá-la.';
   persist('summary');
-  alert('Síntese confirmada. Ela continua somente neste aparelho.');
 });
 
-document.querySelector('#edit-summary').addEventListener('click',()=>summaryText.focus());
-document.querySelector('#reject-summary').addEventListener('click',()=>show(conversationView));
+document.querySelector('#edit-summary').addEventListener('click',()=>{
+  summaryApproved=false;
+  copyPanel.classList.add('hidden');
+  copyStatus.textContent='';
+  summaryText.focus();
+});
+document.querySelector('#reject-summary').addEventListener('click',()=>{
+  summaryApproved=false;
+  copyPanel.classList.add('hidden');
+  copyStatus.textContent='';
+  show(conversationView);
+});
 document.querySelector('#resume-conversation').addEventListener('click',resumeSavedConversation);
 document.querySelector('#acknowledge-test').addEventListener('click',()=>{
   saveAcknowledgement();
@@ -214,7 +242,24 @@ document.querySelector('#delete-conversation').addEventListener('click',()=>{
   }
 });
 
-summaryText.addEventListener('input',()=>persist('summary'));
+document.querySelector('#copy-summary').addEventListener('click',async()=>{
+  if(!summaryApproved) return;
+  try {
+    await copyText(summaryText.value);
+    copyStatus.textContent='Copiado para a área de transferência. O app não enviou o texto para nenhum servidor.';
+  } catch {
+    copyStatus.textContent='Não foi possível copiar automaticamente. Selecione o texto acima e copie manualmente.';
+  }
+});
+
+summaryText.addEventListener('input',()=>{
+  if(summaryApproved) {
+    summaryApproved=false;
+    copyPanel.classList.add('hidden');
+    copyStatus.textContent='';
+  }
+  persist('summary');
+});
 window.addEventListener('pagehide',()=>{
   if(currentView==='conversation' || currentView==='summary') persist(currentView);
 });
