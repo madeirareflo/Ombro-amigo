@@ -396,7 +396,7 @@ test('checkpoints não voltam depois de outras mensagens, mesmo após limite de 
   openingQuestion(state);
   nextQuestion(state,'Ontem percebi uma mudança.');
   nextQuestion(state,'Eu fiquei sem entender a experiência.');
-  nextQuestion(state,'Foi difícil falar sobre isso.');
+  nextQuestion(state,'Foi muita coisa ao mesmo tempo.');
   const countAfterThree=state.ruleHistory.filter(x=>x.ruleId==='AUTONOMY-CHECKPOINT-01').length;
   for(const answer of ['Também penso nisso.','Fico com vergonha de dizer.', 'Isso me fez lembrar do dia anterior.','Ainda penso sobre isso.']){
     nextQuestion(state,answer);
