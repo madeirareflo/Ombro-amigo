@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createConversation, openingQuestion, nextQuestion, buildStructuredSummary } from '../../conversation/engine.js';
+import { createConversation, openingQuestion, nextQuestion, buildStructuredSummary, detectConversationControlIntent } from '../../conversation/engine.js';
 
 test('scope answer is resolved from the preceding opening question', () => {
   const state = createConversation({ mode: 'feeling', depth: 'light' });
@@ -93,4 +93,50 @@ test('older conversation with no context infers prior question dimension without
   assert.equal(state.context.answerScope, 'all');
   assert.equal(state.transcript[0].text, opening);
   assert.deepEqual(state.entries, []);
+});
+
+test('natural phrasing of controls is recognized without storing clinical content', () => {
+  const { cases } = {
+    cases: [
+      ['Pode reformular?', 'clarify'],
+      ['Não saquei.', 'clarify'],
+      ['Não entendi essa pergunta', 'clarify'],
+      ['Explica de outro jeito', 'clarify'],
+      ['Quero seguir', 'continue'],
+      ['Podemos continuar', 'continue'],
+      ['Me ajuda a organizar isso', 'summary'],
+      ['Me ajuda a explicar pro psicólogo', 'summary'],
+      ['Faz um resumo', 'summary'],
+      ['Pode resumir?', 'summary']
+    ]
+  };
+  for (const [phrase, intent] of cases) {
+    const state = createConversation({ mode: 'session', depth: 'medium' });
+    openingQuestion(state);
+    assert.equal(detectConversationControlIntent(phrase), intent, phrase);
+    nextQuestion(state, phrase);
+    assert.equal(state.entries.length, 0, phrase);
+  }
+});
+
+test('new stop expressions never cause continued probing or factual summaries', () => {
+  for (const phrase of ['Não quero mais falar.', 'Quero encerrar.', 'Por hoje é só.']) {
+    const state = createConversation({ mode: 'session', depth: 'medium' });
+    openingQuestion(state);
+    const response = nextQuestion(state, phrase);
+    assert.match(response, /parar por aqui|voltar quando quiser/i);
+    assert.deepEqual(buildStructuredSummary(state).facts, [], phrase);
+  }
+});
+
+test('colloquial uncertainty is not recorded as a claim', () => {
+  for (const phrase of ['Não faço ideia?', 'Sei lá!', 'Não sei???']) {
+    const state = createConversation({ mode: 'feeling', depth: 'medium' });
+    openingQuestion(state);
+    const response = nextQuestion(state, phrase);
+    assert.match(response, /não saber|palavra|ponto em aberto/i);
+    assert.deepEqual(buildStructuredSummary(state), {
+      facts: [], emotions: [], difficulties: [], sessionPoints: []
+    });
+  }
 });
