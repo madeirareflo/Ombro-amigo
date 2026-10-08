@@ -108,7 +108,7 @@ const SIGNALS = [
     ruleId: 'CONV-AFFECT-LABEL-01',
     pattern: UNCERTAINTY_PATTERN,
     questions: [
-      'Faz sentido ainda não ter uma palavra. Isso aparece mais no corpo, nos pensamentos, na vontade de fazer coisas ou nas relações?',
+      'Não saber por enquanto também pode fazer parte do registro. Você prefere escrever uma situação concreta ou só registrar essa incerteza?',
       'Você não precisa acertar um nome. Se ajudar a testar palavras: tristeza, medo, raiva, vergonha, culpa ou ansiedade chega perto — ou nenhuma delas?'
     ]
   },
@@ -174,15 +174,24 @@ const SUMMARY_EXCLUDED_CATEGORIES = new Set(['control', 'question', 'uncertainty
 // Campos ausentes são aceitos para conversas salvas em versões anteriores.
 function ensureConversationContext(state) {
   if (!state.context || typeof state.context !== 'object') state.context = {};
-  if (!Array.isArray(state.context.askedDimensions)) state.context.askedDimensions = [];
-  return state.context;
+  const context = state.context;
+  if (!Array.isArray(context.askedDimensions)) context.askedDimensions = [];
+  if (!Array.isArray(context.questionHistory)) context.questionHistory = [];
+  if (!Number.isSafeInteger(context.uncertaintyStreak) || context.uncertaintyStreak < 0) context.uncertaintyStreak = 0;
+  return context;
 }
 
+// Estas dimensões descrevem perguntas, não classificam clinicamente a pessoa.
 function questionDimension(text) {
-  const value = String(text || '').toLocaleLowerCase('pt-BR');
-  if (/pensamentos.*corpo.*vontade.*relações|corpo.*pensamentos.*vontade.*relações/i.test(value)) return 'scope';
-  if (/parte mais importante|qual parte merece|qual parte.*registrar/i.test(value)) return 'priority';
-  if (/próxima sessão|levar.*sessão|montar.*síntese|parar por hoje/i.test(value)) return 'session_goal';
+  const value = String(text || '').toLocaleLowerCase('pt-BR')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (/pensamentos.{0,50}corpo.{0,80}vontade.{0,100}relac|corpo.{0,60}pensamentos.{0,100}vontade.{0,100}relac/.test(value)) return 'scope';
+  if (/em que momento|quando (essa|ela|isso|ele).{0,45}(aparec|acontec)|antes, durante ou depois/.test(value)) return 'timing';
+  if (/o que estava acontecendo|acontecendo ao redor|exemplo concreto/.test(value)) return 'circumstances';
+  if (/o que aconteceu primeiro|o que percebeu em voce logo depois/.test(value)) return 'sequence';
+  if (/testar palavras|representa bem|alguma chega perto|ou nenhuma delas/.test(value)) return 'affect_words';
+  if (/parte mais importante|qual parte.{0,65}registrar|qual trecho.{0,65}importante|qual parte.{0,65}centro/.test(value)) return 'priority';
+  if (/o que gostaria.{0,75}(levar|contar|comunicar).{0,50}sessao|o que.{0,50}psicolog.{0,30}entend/.test(value)) return 'session_goal';
   return null;
 }
 
@@ -190,6 +199,10 @@ function noteQuestionContext(state, question) {
   const context = ensureConversationContext(state);
   const dimension = questionDimension(question);
   if (dimension && !context.askedDimensions.includes(dimension)) context.askedDimensions.push(dimension);
+  if (dimension) {
+    context.questionHistory.push({ dimension, turn: Number(state.turn || 0) });
+    if (context.questionHistory.length > 12) context.questionHistory = context.questionHistory.slice(-12);
+  }
   context.lastQuestionDimension = dimension;
 }
 
@@ -204,7 +217,22 @@ function classifyBriefReply(state, answer) {
   return null;
 }
 
-function briefReferenceTurn(state) {
+function briefReferenceTurn(state, answer) {
+  const context = ensureConversationContext(state);
+  const value = String(answer || '').trim().toLocaleLowerCase('pt-BR')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?\s]+$/g, '');
+  if (context.lastQuestionDimension === 'scope') {
+    return {
+      text: 'Quero entender a que você se refere sem supor nada. Prefere escrever como isso aparece para você ou deixar essa parte em aberto?',
+      ruleId: 'CONV-CLARIFY-01'
+    };
+  }
+  if (value === 'mais ou menos' || value === 'talvez') {
+    return {
+      text: 'Podemos deixar essa resposta em aberto, sem forçar uma definição. Você prefere acrescentar algo ou seguir para a síntese?',
+      ruleId: 'CONV-CLARIFY-01'
+    };
+  }
   const options = [
     'Quero entender sua resposta sem completar por você. Prefere registrar o que quis dizer ou continuar com suas próprias palavras?',
     'Não preciso que você escolha uma explicação agora. Quer acrescentar algo com suas palavras ou preparar uma síntese do que já contou?',
@@ -212,7 +240,6 @@ function briefReferenceTurn(state) {
   ];
   return { text: firstUnused(state, options) || 'Se quiser, escreva do seu jeito ou use a opção de montar uma síntese.', ruleId: 'CONV-CLARIFY-01' };
 }
-
 
 export function createConversation({ mode, depth = 'light' }) {
   return {
@@ -222,7 +249,7 @@ export function createConversation({ mode, depth = 'light' }) {
     entries: [],
     usedQuestions: [],
     skips: 0,
-    context: { askedDimensions: [], lastQuestionDimension: null, answerScope: null },
+    context: { askedDimensions: [], questionHistory: [], lastQuestionDimension: null, answerScope: null, uncertaintyStreak: 0 },
     lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session,
     lastRuleId: 'CONV-START-01',
     ruleHistory: [{ turn: 0, ruleId: 'CONV-START-01' }],
@@ -242,7 +269,10 @@ export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
   const controlIntent = detectConversationControlIntent(text);
   const briefReply = controlIntent ? null : classifyBriefReply(state, text);
-  if (briefReply === 'scope_all') ensureConversationContext(state).answerScope = 'all';
+  const context = ensureConversationContext(state);
+  if (briefReply === 'scope_all') context.answerScope = 'all';
+  if (UNCERTAINTY_PATTERN.test(text)) context.uncertaintyStreak += 1;
+  else if (!controlIntent) context.uncertaintyStreak = 0;
 
   state.skips = 0;
   if (!controlIntent && !briefReply) {
@@ -276,8 +306,13 @@ export function nextQuestion(state, answer) {
               ruleId: 'CONV-START-01'
             }
           : briefReply === 'brief_reference'
-            ? briefReferenceTurn(state)
-            : chooseAdaptiveTurn(state, text);
+            ? briefReferenceTurn(state, text)
+            : context.uncertaintyStreak >= 3
+              ? {
+                  text: 'Não precisamos insistir nessa pergunta. Você prefere deixar esse ponto em aberto, montar uma síntese ou parar por aqui?',
+                  ruleId: 'AUTONOMY-CHECKPOINT-01'
+                }
+              : chooseAdaptiveTurn(state, text);
 
   state.turn += 1;
   state.lastQuestion = turn.text;
@@ -355,7 +390,8 @@ function continuationTurn(state) {
   }
 
   const pool=CONTINUATION_QUESTIONS[state.depth] || CONTINUATION_QUESTIONS.light;
-  const candidate=firstUnused(state,pool) || pool[0];
+  const candidate=firstUnused(state,pool) ||
+    'Podemos continuar sem repetir as perguntas anteriores. Você prefere acrescentar algo com suas palavras ou montar uma síntese?';
   return { text:candidate, ruleId:'AUTONOMY-CONTINUE-01' };
 }
 
@@ -547,7 +583,15 @@ function unique(items) {
 
 function firstUnused(state, questions) {
   if (!Array.isArray(state.usedQuestions)) state.usedQuestions = [];
-  return questions.find(question => !state.usedQuestions.includes(question)) || null;
+  const context = ensureConversationContext(state);
+  const recentDimensions = new Set(context.questionHistory
+    .filter(item => Number(state.turn || 0) - Number(item.turn || 0) < 3)
+    .map(item => item.dimension));
+  return questions.find(question => {
+    if (state.usedQuestions.includes(question)) return false;
+    const dimension = questionDimension(question);
+    return !dimension || !recentDimensions.has(dimension);
+  }) || null;
 }
 
 function markQuestionUsed(state, question) {
