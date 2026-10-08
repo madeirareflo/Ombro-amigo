@@ -349,3 +349,12 @@ test('assustar-se é reconhecido como emoção declarada sem criar diagnóstico'
   assert.deepEqual(buildStructuredSummary(state).emotions,['Às vezes isso me assusta.']);
   assert.doesNotMatch(response,/transtorno|diagnóstico|psicose|mania/i);
 });
+
+test('pergunta contextual acompanha relato perceptivo sem atribuir diagnóstico',()=>{
+  const state=createConversation({mode:'feeling',depth:'medium'});
+  const response=nextQuestion(state,'Sinto como se o mundo ao meu redor estivesse mais claro e mais colorido e isso às vezes me assusta.');
+  assert.match(response,/ambiente|percebe|experiência/i);
+  assert.match(response,/assusta|psicólogo/i);
+  assert.doesNotMatch(response,/psicose|mania|dissociação|diagnóstico/i);
+  assert.equal(state.entries[0].source,'declared');
+});
