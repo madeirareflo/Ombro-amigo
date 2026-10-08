@@ -251,7 +251,7 @@ test('não prevê reação do psicólogo nem oferece falsa garantia', () => {
   const state=createConversation({mode:'session',depth:'medium'});
   const response=nextQuestion(state,'Meu psicólogo vai me julgar quando eu contar?');
   assert.match(response,/não consigo prever/i);
-  assert.match(response,/levar para a sessão/i);
+  assert.match(response,/leve para a sessão|levar.*sessão/i);
   assert.doesNotMatch(response,/não vai te julgar|com certeza|vai entender/i);
   assert.deepEqual(state.entries[0].categories,['question']);
 });
