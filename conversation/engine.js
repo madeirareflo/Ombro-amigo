@@ -170,6 +170,50 @@ const SIGNALS = [
 
 const SUMMARY_EXCLUDED_CATEGORIES = new Set(['control', 'question', 'uncertainty']);
 
+// A conversa guarda contexto explícito, sem inferir fatos ou estados clínicos.
+// Campos ausentes são aceitos para conversas salvas em versões anteriores.
+function ensureConversationContext(state) {
+  if (!state.context || typeof state.context !== 'object') state.context = {};
+  if (!Array.isArray(state.context.askedDimensions)) state.context.askedDimensions = [];
+  return state.context;
+}
+
+function questionDimension(text) {
+  const value = String(text || '').toLocaleLowerCase('pt-BR');
+  if (/pensamentos.*corpo.*vontade.*relações|corpo.*pensamentos.*vontade.*relações/i.test(value)) return 'scope';
+  if (/parte mais importante|qual parte merece|qual parte.*registrar/i.test(value)) return 'priority';
+  if (/próxima sessão|levar.*sessão|montar.*síntese|parar por hoje/i.test(value)) return 'session_goal';
+  return null;
+}
+
+function noteQuestionContext(state, question) {
+  const context = ensureConversationContext(state);
+  const dimension = questionDimension(question);
+  if (dimension && !context.askedDimensions.includes(dimension)) context.askedDimensions.push(dimension);
+  context.lastQuestionDimension = dimension;
+}
+
+// Respostas elípticas dependem da pergunta anterior; nunca entram na síntese como fatos.
+function classifyBriefReply(state, answer) {
+  const normalized = String(answer || '').toLocaleLowerCase('pt-BR')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?\s]+$/g, '').trim();
+  if (/^(em )?(tudo isso|todas (essas )?areas)$/.test(normalized)) {
+    return ensureConversationContext(state).lastQuestionDimension === 'scope' ? 'scope_all' : 'brief_reference';
+  }
+  if (/^(isso|tudo|sim|nao|mais ou menos|talvez)$/.test(normalized)) return 'brief_reference';
+  return null;
+}
+
+function briefReferenceTurn(state) {
+  const options = [
+    'Quero entender sua resposta sem completar por você. Prefere registrar o que quis dizer ou continuar com suas próprias palavras?',
+    'Não preciso que você escolha uma explicação agora. Quer acrescentar algo com suas palavras ou preparar uma síntese do que já contou?',
+    'Podemos seguir sem adivinhar o que você quis dizer. Prefere continuar escrevendo ou parar por aqui?'
+  ];
+  return { text: firstUnused(state, options) || 'Se quiser, escreva do seu jeito ou use a opção de montar uma síntese.', ruleId: 'CONV-CLARIFY-01' };
+}
+
+
 export function createConversation({ mode, depth = 'light' }) {
   return {
     mode,
@@ -178,6 +222,7 @@ export function createConversation({ mode, depth = 'light' }) {
     entries: [],
     usedQuestions: [],
     skips: 0,
+    context: { askedDimensions: [], lastQuestionDimension: null, answerScope: null },
     lastQuestion: START_QUESTIONS[mode] || START_QUESTIONS.session,
     lastRuleId: 'CONV-START-01',
     ruleHistory: [{ turn: 0, ruleId: 'CONV-START-01' }],
@@ -189,15 +234,18 @@ export function createConversation({ mode, depth = 'light' }) {
 
 export function openingQuestion(state) {
   markQuestionUsed(state, state.lastQuestion);
+  noteQuestionContext(state, state.lastQuestion);
   return state.lastQuestion;
 }
 
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
   const controlIntent = detectConversationControlIntent(text);
+  const briefReply = controlIntent ? null : classifyBriefReply(state, text);
+  if (briefReply === 'scope_all') ensureConversationContext(state).answerScope = 'all';
 
   state.skips = 0;
-  if (!controlIntent) {
+  if (!controlIntent && !briefReply) {
     state.entries.push({
       kind: 'user_statement',
       text,
@@ -227,13 +275,16 @@ export function nextQuestion(state, answer) {
               text: 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.',
               ruleId: 'CONV-START-01'
             }
-          : chooseAdaptiveTurn(state, text);
+          : briefReply === 'brief_reference'
+            ? briefReferenceTurn(state)
+            : chooseAdaptiveTurn(state, text);
 
   state.turn += 1;
   state.lastQuestion = turn.text;
   state.lastRuleId = turn.ruleId;
   recordRule(state, turn.ruleId);
   markQuestionUsed(state, turn.text);
+  noteQuestionContext(state, turn.text);
   state.transcript.push({ role: 'ai', text: turn.text });
   return turn.text;
 }
@@ -257,6 +308,7 @@ export function skipQuestion(state) {
   state.lastRuleId = ruleId;
   recordRule(state, ruleId);
   markQuestionUsed(state, question);
+  noteQuestionContext(state, question);
   state.transcript.push({ role: 'ai', text: question });
   return question;
 }
