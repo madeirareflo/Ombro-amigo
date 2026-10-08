@@ -9,7 +9,7 @@ import { SYNTHETIC_INTENT_EXAMPLES } from '../../conversation/local-intent-corpu
 import { classifyLocalIntent } from '../../conversation/local-intent-classifier.js';
 import { LOCAL_INTENT_EVAL_V2 } from '../../tests/fixtures/local-intent-eval-v2.mjs';
 import {
-  partitionByFamily, validateEvaluationFixtures, evaluateIntentRows
+  partitionByFamily, validateEvaluationFixtures, evaluateIntentRows, selectBalancedEvaluation
 } from '../../scripts/lib/intent-evaluation-v2.mjs';
 import {
   validateLocalModelManifest, classifyWithLocalEmbedding, OFFLINE_EMBEDDING_LAB_VERSION
@@ -67,7 +67,7 @@ async function main() {
   const fixtureStats = validateEvaluationFixtures(
     LOCAL_INTENT_EVAL_V2, Object.values(SYNTHETIC_INTENT_EXAMPLES).flat()
   );
-  const all = partitionByFamily(LOCAL_INTENT_EVAL_V2)[options.split].slice(0, options.max);
+  const all = selectBalancedEvaluation(partitionByFamily(LOCAL_INTENT_EVAL_V2)[options.split], options.max);
 
   // Intentionally fail closed on any runtime request: local files only.
   globalThis.fetch = async () => { throw new Error('network-fetch-blocked-in-offline-lab'); };
