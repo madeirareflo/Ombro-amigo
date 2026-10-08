@@ -114,3 +114,15 @@ test('limites clínicos permanecem desativados', () => {
   assert.equal(AI_BOUNDARIES.clinicalInterpretation, false);
   assert.equal(AI_BOUNDARIES.automaticSharing, false);
 });
+
+
+test('transcript preserva sequência de mensagens para retomada local', () => {
+  const state=createConversation({mode:'session',depth:'light'});
+  const first=openingQuestion(state);
+  const next=nextQuestion(state,'Tenho algo difícil para contar.');
+  assert.deepEqual(state.transcript,[
+    {role:'ai',text:first},
+    {role:'user',text:'Tenho algo difícil para contar.'},
+    {role:'ai',text:next}
+  ]);
+});
