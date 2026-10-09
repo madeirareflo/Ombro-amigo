@@ -57,10 +57,13 @@ let session=null;
 let currentView='onboarding';
 let summaryApproved=false;
 let summaryModel=null;
+let freeSaveTimer=null;
+let freeSaveVersion=0;
 
 function focusViewEntry(view){
   if(view===conversationView){
-    reply.focus({preventScroll:true});
+    if(session?.mode==='free') freeText.focus({preventScroll:true});
+    else reply.focus({preventScroll:true});
     return;
   }
 
@@ -284,6 +287,7 @@ function configureWritingMode(){
 }
 
 function start(mode){
+  cancelFreeSave();
   const depth=document.querySelector('input[name="depth"]:checked')?.value||'light';
   session=createConversation({mode,depth});
   if(mode==='free'){
@@ -306,6 +310,7 @@ function start(mode){
 }
 
 async function resumeSavedConversation(){
+  cancelFreeSave();
   const saved=await loadConversationState();
   if(!saved?.session) return;
   session=saved.session;
@@ -454,31 +459,59 @@ async function refreshApplicationShell(){
 }
 
 
-function retainFreeWriting(){
-  if(session?.mode!=='free') return false;
-  const text=freeText.value.trim();
-  if(!text){freeStatus.textContent='Escreva algo antes de guardar ou organizar.';return false;}
-  const safety=assessSafety({explicitImmediateDanger:detectExplicitImmediateDanger(text)});
-  if(safety.interrupt){showUrgentHelp(safety.message);return false;}
-  // Save the original text verbatim, never infer categories or split a sentence.
-  session.entries=[{kind:'user_statement',text,source:'declared',categories:['fact']}];
-  session.transcript=[{role:'user',text}];
-  session.turn=1;
+function cancelFreeSave(){
+  if(freeSaveTimer!==null){clearTimeout(freeSaveTimer);freeSaveTimer=null;}
+  freeSaveVersion++;
+}
+function snapshotFreeWriting(){
+  if(session?.mode!=='free')return false;
+  // Do not trim the persisted source: the person controls all spacing and punctuation.
+  const text=freeText.value;
+  session.entries=text.trim()?[{kind:'user_statement',text,source:'declared',categories:['fact']}]:[];
+  session.transcript=text.trim()?[{role:'user',text}]:[];
+  session.turn=text.trim()?1:0;
   summaryModel=null;
   invalidateSummaryApproval();
-  freeStatus.textContent='Texto guardado neste aparelho, conforme a disponibilidade do armazenamento local.';
-  void persist('conversation');
   return true;
 }
-$('#save-free-writing').addEventListener('click',()=>{retainFreeWriting();});
-$('#organize-free-writing').addEventListener('click',()=>{
-  if(!retainFreeWriting()) return;
+async function saveFreeWriting({showStatus=true}={}){
+  cancelFreeSave();
+  if(!snapshotFreeWriting())return false;
+  await persist('conversation');
+  const status=await getConversationStorageStatus();
+  if(showStatus)freeStatus.textContent=status.persistenceConfirmed
+    ?'Texto salvo e cifrado neste navegador.'
+    :'Texto disponível nesta aba; o armazenamento permanente não foi confirmado. Não feche esta aba sem copiar seu texto.';
+  return status.persistenceConfirmed;
+}
+async function retainFreeWriting(){
+  if(session?.mode!=='free')return false;
+  if(!freeText.value.trim()){
+    freeStatus.textContent='Escreva algo antes de organizar.';
+    return false;
+  }
+  const safety=assessSafety({explicitImmediateDanger:detectExplicitImmediateDanger(freeText.value)});
+  if(safety.interrupt){showUrgentHelp(safety.message);return false;}
+  await saveFreeWriting();
+  return true;
+}
+$('#save-free-writing').addEventListener('click',()=>{void saveFreeWriting();});
+$('#organize-free-writing').addEventListener('click',async()=>{
+  if(!await retainFreeWriting())return;
   createOrRestoreSummary();
   show(summaryView);
   void persist('summary');
 });
 freeText.addEventListener('input',()=>{
-  freeStatus.textContent='Alterações ainda não guardadas. Use “Guardar texto” para salvar.';
+  snapshotFreeWriting();
+  if(freeSaveTimer!==null)clearTimeout(freeSaveTimer);
+  const version=++freeSaveVersion;
+  freeStatus.textContent='Salvando alterações neste aparelho…';
+  freeSaveTimer=setTimeout(()=>{
+    if(version!==freeSaveVersion||session?.mode!=='free')return;
+    freeSaveTimer=null;
+    void saveFreeWriting();
+  },650);
 });
 
 document.querySelectorAll('[data-start]').forEach(button=>button.addEventListener('click',()=>start(button.dataset.start)));
@@ -532,10 +565,9 @@ $('#say-this').addEventListener('click',()=>{
   void persist('summary');
 });
 
-$('#back-home').addEventListener('click',()=>{
-  if(session?.mode==='free' && freeText.value.trim()){
-    if(!retainFreeWriting()) return;
-  }else void persist('conversation');
+$('#back-home').addEventListener('click',async()=>{
+  if(session?.mode==='free')await saveFreeWriting();
+  else await persist('conversation');
   show(home);
   void refreshResumePanel();
 });
