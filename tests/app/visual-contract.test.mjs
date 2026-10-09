@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-test('home expõe somente três caminhos principais',async()=>{
+test('home expõe escrita livre e três caminhos guiados',async()=>{
   const html=await readFile('index.html','utf8');
   const match=html.match(/<div class="primary-paths"[\s\S]*?<\/div>/);
   assert.ok(match);
-  assert.equal((match[0].match(/data-start=/g)||[]).length,3);
+  assert.equal((match[0].match(/data-start=/g)||[]).length,4);
+  assert.ok(match[0].indexOf('data-start="free"') < match[0].indexOf('data-start="session"'));
 });
 
 test('onboarding exige confirmação 18+ antes de continuar',async()=>{

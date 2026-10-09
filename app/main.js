@@ -34,6 +34,9 @@ const safetyResources=$('#safety-resources');
 const messages=$('#messages');
 const reply=$('#reply');
 const replyForm=$('#reply-form');
+const freePanel=$('#free-writing-panel');
+const freeText=$('#free-writing-text');
+const freeStatus=$('#free-writing-status');
 const depthLabel=$('#depth-label');
 const summaryText=$('#summary-text');
 const summaryEditor=$('#summary-editor');
@@ -106,7 +109,10 @@ function legacyTranscript(savedSession){
 }
 
 function syncSummaryText(){
-  summaryText.value=summaryModelToText(summaryModel);
+  const result=summaryModelToText(summaryModel);
+  summaryText.value=session?.mode==='free'
+    ? result.replace('O que aconteceu','Meu relato original (sem reescrita)')
+    : result;
 }
 
 function invalidateSummaryApproval(){
@@ -148,7 +154,9 @@ function renderSummaryEditor(){
     header.className='summary-section-header';
     const title=document.createElement('h3');
     title.id='summary-section-'+section.id+'-title';
-    title.textContent=section.title;
+    title.textContent=session?.mode==='free' && section.id==='facts'
+      ? 'Meu relato original (sem reescrita)'
+      : section.title;
     wrapper.setAttribute('aria-labelledby',title.id);
     const structure=document.createElement('span');
     structure.className='structure-badge';
@@ -225,7 +233,10 @@ function renderSummaryEditor(){
 }
 
 function createOrRestoreSummary(savedModel=null){
-  summaryModel=normalizeSummaryModel(savedModel) || createSummaryModel(buildStructuredSummary(session));
+  const structured=session?.mode==='free'
+    ? {facts:(session.entries||[]).map(entry=>entry.text).filter(Boolean),emotions:[],difficulties:[],sessionPoints:[]}
+    : buildStructuredSummary(session);
+  summaryModel=normalizeSummaryModel(savedModel) || createSummaryModel(structured);
   syncSummaryText();
   renderSummaryEditor();
   invalidateSummaryApproval();
@@ -253,14 +264,33 @@ function depthName(depth){
   return {light:'Só começar',medium:'Falar um pouco',deep:'Mais detalhes'}[depth] || 'Conversa';
 }
 
+function configureWritingMode(){
+  const free=session?.mode==='free';
+  freePanel.classList.toggle('hidden',!free);
+  messages.classList.toggle('hidden',free);
+  replyForm.classList.toggle('hidden',free);
+  const progress=conversationView.querySelector('.progress-track');
+  if(progress) progress.classList.toggle('hidden',free);
+  if(!free) freeText.value='';
+}
+
 function start(mode){
   const depth=document.querySelector('input[name="depth"]:checked')?.value||'light';
   session=createConversation({mode,depth});
+  if(mode==='free'){
+    session.lastQuestion='';
+    session.transcript=[];
+    session.ruleHistory=[];
+    session.entries=[];
+    freeText.value='';
+    freeStatus.textContent='Use “Guardar texto” para salvar localmente antes de sair.';
+  }
   summaryModel=null;
   messages.replaceChildren();
-  depthLabel.textContent=depthName(depth);
+  depthLabel.textContent=mode==='free'?'Escrita livre':depthName(depth);
+  configureWritingMode();
   show(conversationView);
-  addMessage('ai',openingQuestion(session));
+  if(mode!=='free') addMessage('ai',openingQuestion(session));
   summaryText.value='';
   invalidateSummaryApproval();
   void persist('conversation');
@@ -270,8 +300,10 @@ async function resumeSavedConversation(){
   const saved=await loadConversationState();
   if(!saved?.session) return;
   session=saved.session;
-  depthLabel.textContent=depthName(session.depth);
-  renderConversation(session);
+  depthLabel.textContent=session.mode==='free'?'Escrita livre':depthName(session.depth);
+  configureWritingMode();
+  if(session.mode==='free') freeText.value=(session.entries||[]).map(item=>item.text).join('\n\n');
+  else renderConversation(session);
   summaryModel=normalizeSummaryModel(saved.summaryModel);
   summaryText.value=saved.summaryDraft || '';
   invalidateSummaryApproval();
@@ -412,6 +444,34 @@ async function refreshApplicationShell(){
   }
 }
 
+
+function retainFreeWriting(){
+  if(session?.mode!=='free') return false;
+  const text=freeText.value.trim();
+  if(!text){freeStatus.textContent='Escreva algo antes de guardar ou organizar.';return false;}
+  const safety=assessSafety({explicitImmediateDanger:detectExplicitImmediateDanger(text)});
+  if(safety.interrupt){showUrgentHelp(safety.message);return false;}
+  // Save the original text verbatim, never infer categories or split a sentence.
+  session.entries=[{kind:'user_statement',text,source:'declared',categories:['fact']}];
+  session.transcript=[{role:'user',text}];
+  session.turn=1;
+  summaryModel=null;
+  invalidateSummaryApproval();
+  freeStatus.textContent='Texto guardado neste aparelho, conforme a disponibilidade do armazenamento local.';
+  void persist('conversation');
+  return true;
+}
+$('#save-free-writing').addEventListener('click',()=>{retainFreeWriting();});
+$('#organize-free-writing').addEventListener('click',()=>{
+  if(!retainFreeWriting()) return;
+  createOrRestoreSummary();
+  show(summaryView);
+  void persist('summary');
+});
+freeText.addEventListener('input',()=>{
+  freeStatus.textContent='Alterações ainda não guardadas. Use “Guardar texto” para salvar.';
+});
+
 document.querySelectorAll('[data-start]').forEach(button=>button.addEventListener('click',()=>start(button.dataset.start)));
 
 document.querySelectorAll('input[name="depth"]').forEach(input=>input.addEventListener('change',()=>{
@@ -464,7 +524,9 @@ $('#say-this').addEventListener('click',()=>{
 });
 
 $('#back-home').addEventListener('click',()=>{
-  void persist('conversation');
+  if(session?.mode==='free' && freeText.value.trim()){
+    if(!retainFreeWriting()) return;
+  }else void persist('conversation');
   show(home);
   void refreshResumePanel();
 });
