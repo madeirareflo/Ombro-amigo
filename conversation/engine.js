@@ -1,4 +1,5 @@
 import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
+import { selectGroundedFollowup, groundedBriefReference, isExplicitLonelinessDeclaration } from './grounded-followups.js';
 
 const START_QUESTIONS = {
   event: 'Isso tem mais a ver com algo que aconteceu ou com como você se sentiu depois?',
@@ -240,6 +241,8 @@ function classifyBriefReply(state, answer) {
 }
 
 function briefReferenceTurn(state, answer) {
+  const grounded = groundedBriefReference(state, answer);
+  if (grounded) return grounded;
   const context = ensureConversationContext(state);
   const value = String(answer || '').trim().toLocaleLowerCase('pt-BR')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?\s]+$/g, '');
@@ -452,6 +455,11 @@ export function chooseAdaptiveTurn(state, answer) {
     };
   }
 
+  // Narrow, first-person declarations and explicit answer-to-question choices
+  // are reflected BEFORE generic fallback/checkpoints. Never infer a symptom.
+  const grounded = selectGroundedFollowup(state, text);
+  if (grounded) return grounded;
+
   // Prioriza detalhes declarados, sem atribuir significado clínico a eles.
   if (/\b(mundo|ambiente|ao redor|luz|claro|clara|colorido|colorida|cores)\b/i.test(text) && /\b(assusta|assustado|assustada|medo|estranho|estranha)\b/i.test(text)) {
     const options=[
@@ -586,7 +594,7 @@ function classifyDeclaredContent(text) {
   if (UNCERTAINTY_PATTERN.test(value)) return ['uncertainty'];
   if (/^(em\s+)?tudo\s+isso[.!?]*$/i.test(value) || /^em\s+todas\s+(essas\s+)?áreas[.!?]*$/i.test(value)) return ['control'];
 
-  if (/\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value)) {
+  if (isExplicitLonelinessDeclaration(value) || /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value)) {
     categories.push('emotion');
   }
 
