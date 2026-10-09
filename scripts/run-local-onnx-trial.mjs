@@ -4,7 +4,7 @@
  * Never use private user writing in this benchmark.
  */
 import {resolve,join,sep} from 'node:path';
-import {stat,readFile,readdir} from 'node:fs/promises';
+import {stat,readFile,readdir,writeFile} from 'node:fs/promises';
 import {performance} from 'node:perf_hooks';
 import {assessRewriteProposal} from '../research/local-rewrite-gate.js';
 import {preflightLocalBundle} from '../research/offline-bundle-preflight.js';
@@ -48,7 +48,7 @@ export function measureCandidate(result,input,elapsedMs){
   return {elapsedMs:Math.round(elapsedMs),outputCharacters:String(result||'').length,
     gateStatus:check.status,redFlags:check.failures,semanticVerification:false,requiresHumanReview:true};
 }
-export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='wasm',dtype='q4',generatorFactory=null}={}){
+export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='wasm',dtype='q4',generatorFactory=null,reviewOutput=null}={}){
   if(modelId!==CANDIDATE)throw Error('Only explicitly reviewed candidate permitted');
   if(!wasmRoot && !generatorFactory)throw Error('LOCAL_WASM_ROOT required: remote runtime downloads are forbidden');
   const local=await checkLocalFiles(root,modelId);
@@ -74,6 +74,7 @@ export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='w
     generator=await pipeline('text-generation',modelId,{device,dtype});
   }
   const rows=[];
+  const reviews=[];
   for(const fixture of SYNTHETIC_CASES){
     const start=performance.now();
     const output=await generator(prompt(fixture.input),{
@@ -82,7 +83,18 @@ export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='w
     const generated=output?.[0]?.generated_text;
     const text=typeof generated==='string'?generated:
       Array.isArray(generated)?String(generated.at(-1)?.content||''):'';
-    rows.push({id:fixture.id,...measureCandidate(text,fixture.input,performance.now()-start)});
+    const metrics=measureCandidate(text,fixture.input,performance.now()-start);
+    rows.push({id:fixture.id,...metrics});
+    if(reviewOutput)reviews.push({id:fixture.id,original:fixture.input,candidate:text,
+      checks:{gateStatus:metrics.gateStatus,redFlags:metrics.redFlags},
+      reviewer:{negation:'not-reviewed',thirdParty:'not-reviewed',time:'not-reviewed',
+        unsupportedClaims:'not-reviewed',omissions:'not-reviewed',naturalnessPtBR:'not-reviewed',notes:''}});
+  }
+  if(reviewOutput){
+    // Explicit opt-in: ONLY synthetic fixture text; restrictive file permissions.
+    // The output is a research artifact, NEVER loaded by the PWA.
+    await writeFile(resolve(reviewOutput),JSON.stringify({schema:'synthetic-review-v1',
+      modelId,device,dtype,reviewStatus:'pending-human-review',reviews},null,2),{encoding:'utf8',flag:'wx',mode:0o600});
   }
   return {modelId,device,dtype,caseCount:rows.length,results:rows,
     claims:{offlineConfigured:true,provenOnPhysicalMobile:false,clinicalValidation:false,
@@ -92,7 +104,7 @@ if(process.argv[1] && import.meta.url===new URL('file://'+resolve(process.argv[1
   const root=process.env.LOCAL_MODEL_ROOT;
   const wasmRoot=process.env.LOCAL_WASM_ROOT;
   try{
-    const result=await runOfflineTrial({root,wasmRoot});
+    const result=await runOfflineTrial({root,wasmRoot,reviewOutput:process.env.SYNTHETIC_REVIEW_OUTPUT||null});
     // Metrics only: never print prompts, drafts, user input, or generated text.
     process.stdout.write(JSON.stringify(result,null,2)+'\n');
   }catch(e){
