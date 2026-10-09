@@ -79,7 +79,7 @@ export function validateNeutralResponseCatalog(catalog = NEUTRAL_RESPONSE_CATALO
       throw new Error('invalid-response-text');
     }
     // Not a complete clinical review: this only catches obvious prohibited claims.
-    if (/\b(diagn[oó]stic|transtorno|patologia|s[oó] precisa de mim|voc[eê] sente porque|eu sei o que voc[eê] sente)\b/i.test(item.text)) {
+    if (/\b(diagn[oó]stic\w*|transtorn\w*|patologia|s[oó] precisa de mim|voc[eê] sente porque|eu sei o que voc[eê] sente)\b/i.test(item.text)) {
       throw new Error('prohibited-clinical-claim');
     }
   }
