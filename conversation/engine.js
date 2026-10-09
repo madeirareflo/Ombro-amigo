@@ -492,7 +492,7 @@ export function chooseAdaptiveTurn(state, answer) {
 
   // Do not reflexively attribute an emotion a person reported ABOUT somebody
   // else to the speaker. This branch comes after safety and explicit controls.
-  const attributedThirdParty = thirdPartyReportTurn(text);
+  const attributedThirdParty = thirdPartyReportTurn(text, state);
   if (attributedThirdParty) return attributedThirdParty;
 
   const matchedSignal = SIGNALS.find(signal => signal.pattern.test(text));
