@@ -1,4 +1,4 @@
-name: Experimental ONNX CPU benchmark (synthetic, validation calibration)
+name: Experimental ONNX CPU benchmark (frozen synthetic holdout)
 
 on:
   push:
@@ -39,6 +39,8 @@ jobs:
           node experiments/onnx-lab/bench-local-onnx.mjs
           --model-root "$RUNNER_TEMP/ombro-onnx-models"
           --model-name ptbr-minilm-l12-q8
-          --split validation
-          --max-samples 64
+          --split holdout
+          --max-samples 256
           --train-per-label 8
+          --min-similarity 0.50
+          --min-margin 0.04
