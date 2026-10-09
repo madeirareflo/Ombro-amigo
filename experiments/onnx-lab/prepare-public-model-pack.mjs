@@ -10,7 +10,7 @@ import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 
 const REPO = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
 const REPO_URL = 'https://huggingface.co/' + REPO;
-const PINNED_SHA_PREFIX = '2c4055b';
+const PINNED_REVISION = '2c4055b12046f11709e9df2c122e59ffbdc2f900';
 const MODEL_NAME = 'ptbr-minilm-l12-q8';
 const MAX_FILE_BYTES = 150 * 1024 * 1024;
 
@@ -47,7 +47,7 @@ async function run() {
   const ref = execFileSync('git', ['ls-remote', REPO_URL, 'HEAD'], {
     encoding: 'utf8', timeout: 30000, maxBuffer: 1024
   }).trim().split(/\s+/)[0];
-  if (!new RegExp('^[a-f0-9]{40}$').test(ref) || !ref.startsWith(PINNED_SHA_PREFIX)) {
+  if (!new RegExp('^[a-f0-9]{40}$').test(ref) || ref !== PINNED_REVISION) {
     throw new Error('upstream revision changed; stop and re-review model before download');
   }
   const modelRoot = join(root, MODEL_NAME);
