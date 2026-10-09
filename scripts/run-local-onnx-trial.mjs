@@ -50,6 +50,7 @@ export function measureCandidate(result,input,elapsedMs){
 }
 export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='wasm',dtype='q4',generatorFactory=null}={}){
   if(modelId!==CANDIDATE)throw Error('Only explicitly reviewed candidate permitted');
+  if(!wasmRoot && !generatorFactory)throw Error('LOCAL_WASM_ROOT required: remote runtime downloads are forbidden');
   const local=await checkLocalFiles(root,modelId);
   if(!local.ok)throw Error('Local model not ready: '+local.reason);
   // Mock is only used in automated code tests. Real inference must verify bytes.
@@ -57,7 +58,6 @@ export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='w
     const integrity=await verifyPinnedWeight(local.path,dtype);
     if(!integrity.ok)throw Error('Pinned model integrity check failed: '+integrity.reason);
   }
-  if(!wasmRoot && !generatorFactory)throw Error('LOCAL_WASM_ROOT required: remote runtime downloads are forbidden');
   if(!['wasm','webgpu'].includes(device))throw Error('Unsupported device');
   if(!['q4','q4f16'].includes(dtype))throw Error('Unreviewed quantization');
   let generator=generatorFactory;
