@@ -17,6 +17,8 @@ test('injection-safe dry run with synthetic-only generator and local config',asy
   try{
     await mkdir(folder,{recursive:true});
     await writeFile(join(folder,'config.json'),JSON.stringify({model_type:'qwen3'}));
+    await mkdir(join(folder,'onnx'));
+    await writeFile(join(folder,'onnx','model_q4.onnx'),'synthetic test fixture only');
     let calls=0;
     const mock=async(messages,opts)=>{
       assert.equal(messages.length,2);
@@ -40,6 +42,8 @@ test('the runner does not allow unknown model identities or missing local runtim
   try{
     await mkdir(folder,{recursive:true});
     await writeFile(join(folder,'config.json'),JSON.stringify({model_type:'qwen3'}));
+    await mkdir(join(folder,'onnx'));
+    await writeFile(join(folder,'onnx','model_q4.onnx'),'synthetic test fixture only');
     await assert.rejects(()=>runOfflineTrial({root,modelId:'remote/unreviewed'}),/reviewed candidate/);
     await assert.rejects(()=>runOfflineTrial({root}),/LOCAL_WASM_ROOT required/);
   }finally{await rm(root,{recursive:true,force:true});}
