@@ -1,3 +1,5 @@
+import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
+
 const START_QUESTIONS = {
   event: 'Isso tem mais a ver com algo que aconteceu ou com como você se sentiu depois?',
   session: 'O que torna esse assunto difícil de começar na sessão?',
@@ -327,6 +329,7 @@ export function nextQuestion(state, answer) {
   state.lastQuestion = turn.text;
   state.lastRuleId = turn.ruleId;
   recordRule(state, turn.ruleId);
+  rememberGuidedResponse(state, turn);
   markQuestionUsed(state, turn.text);
   noteQuestionContext(state, turn.text);
   state.transcript.push({ role: 'ai', text: turn.text });
@@ -397,6 +400,9 @@ function continuationTurn(state) {
       if (candidate) return { text:candidate, ruleId:matchedSignal.ruleId };
     }
   }
+
+  const guided = selectGuidedResponse(state, { channel: 'continue' });
+  if (guided) return guided;
 
   const pool=CONTINUATION_QUESTIONS[state.depth] || CONTINUATION_QUESTIONS.light;
   const candidate=firstUnused(state,pool) ||
@@ -473,6 +479,11 @@ export function chooseAdaptiveTurn(state, answer) {
       ruleId: 'AUTONOMY-CHECKPOINT-01'
     };
   }
+
+  // Only neutral, non-sensitive fallbacks reach this catalog. Guards, controls,
+  // declared signal reflection and autonomy checkpoints have already run.
+  const guided = selectGuidedResponse(state, { channel: 'fallback' });
+  if (guided) return guided;
 
   const fallbackPool = GENERIC_FALLBACKS[state.depth] || GENERIC_FALLBACKS.light;
   const fallback = firstUnused(state, fallbackPool);
