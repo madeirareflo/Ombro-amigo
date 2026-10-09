@@ -1,0 +1,44 @@
+name: Experimental ONNX CPU benchmark (public synthetic data)
+
+on:
+  push:
+    branches:
+      - experiment/offline-minilm-onnx-run-v1
+    paths:
+      - .github/workflows/onnx-minilm-smoke.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onnx-lab-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate full JavaScript regression suite
+        run: npm run check
+      - name: Install lab-only dependencies (not in PWA)
+        run: npm install --prefix experiments/onnx-lab --no-audit --no-fund --no-package-lock
+      - name: Download public, revision-pinned model into ephemeral workspace
+        run: node experiments/onnx-lab/prepare-public-model-pack.mjs --root "$RUNNER_TEMP/ombro-onnx-models"
+      - name: Benchmark locally with network model loading disabled
+        env:
+          HF_HUB_OFFLINE: '1'
+          TRANSFORMERS_OFFLINE: '1'
+          HF_HUB_DISABLE_TELEMETRY: '1'
+          DO_NOT_TRACK: '1'
+        run: >
+          node experiments/onnx-lab/bench-local-onnx.mjs
+          --model-root "$RUNNER_TEMP/ombro-onnx-models"
+          --model-name ptbr-minilm-l12-q8
+          --split validation
+          --max-samples 32
+          --train-per-label 8
