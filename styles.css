@@ -55,3 +55,11 @@ textarea{width:100%;resize:vertical;border:1px solid var(--border);border-radius
 footer{text-align:center;color:var(--muted);font-size:.72rem;padding:0 1rem calc(1rem + env(safe-area-inset-bottom))}
 @media(max-width:560px){.app-header{align-items:flex-start}.status-stack{max-width:48%}.card{border-radius:20px}.privacy-grid{grid-template-columns:1fr}.actions>* ,.summary-actions>* ,.resume-actions>*{flex:1 1 100%}.summary-item{grid-template-columns:1fr}.remove-item{grid-column:1;grid-row:auto;justify-self:start}.progress-track span{font-size:.6rem}.quiet-actions,.home-footer-actions{display:grid;gap:.15rem}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Free-writing first: generous, single-column space with no mandatory prompts. */
+.free-first-path{border:2px solid var(--accent);background:var(--soft)!important;color:var(--ink)!important;text-align:left}
+.free-first-path span,.free-first-path small{color:var(--ink)!important}
+.free-writing-panel{display:grid;gap:.85rem;margin:1rem 0}
+.free-writing-panel label{font-weight:650}
+.free-writing-panel textarea{width:100%;min-height:260px;resize:vertical;padding:1rem;border:1px solid var(--border);border-radius:16px;line-height:1.65;background:var(--surface);color:var(--ink)}
+.free-writing-panel .actions{display:flex;gap:.65rem;flex-wrap:wrap}
