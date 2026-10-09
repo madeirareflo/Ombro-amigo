@@ -15,9 +15,9 @@ test('free-writing is primary and does not require prompted chat',()=>{
 });
 
 test('free writing persists verbatim without fabricated clinical categories',()=>{
-  assert.match(js,/session\.entries=\[\{kind:'user_statement',text,source:'declared',categories:\['fact'\]\}\]/);
-  assert.match(js,/session\.transcript=\[\{role:'user',text\}\]/);
-  assert.match(js,/explicitImmediateDanger:detectExplicitImmediateDanger\(text\)/);
+  assert.match(js,/session\.entries=text\.trim\(\)\?\[\{kind:'user_statement',text,source:'declared',categories:\['fact'\]\}\]:\[\]/);
+  assert.match(js,/session\.transcript=text\.trim\(\)\?\[\{role:'user',text\}\]:\[\]/);
+  assert.match(js,/explicitImmediateDanger:detectExplicitImmediateDanger\(freeText\.value\)/);
   const example='Sei lá. Me sinto só, mas não sei por quê.\nTenho receio de falar.';
   const model=createSummaryModel({facts:[example],emotions:[],difficulties:[],sessionPoints:[]});
   assert.equal(model.sections[0].items[0].text,example);
