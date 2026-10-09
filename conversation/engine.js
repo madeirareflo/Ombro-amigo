@@ -1,5 +1,5 @@
 import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
-import { selectGroundedFollowup, groundedBriefReference } from './grounded-followups.js';
+import { selectGroundedFollowup, groundedBriefReference, isExplicitLonelinessDeclaration } from './grounded-followups.js';
 
 const START_QUESTIONS = {
   event: 'Isso tem mais a ver com algo que aconteceu ou com como você se sentiu depois?',
@@ -594,7 +594,7 @@ function classifyDeclaredContent(text) {
   if (UNCERTAINTY_PATTERN.test(value)) return ['uncertainty'];
   if (/^(em\s+)?tudo\s+isso[.!?]*$/i.test(value) || /^em\s+todas\s+(essas\s+)?áreas[.!?]*$/i.test(value)) return ['control'];
 
-  if (/\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value)) {
+  if (isExplicitLonelinessDeclaration(value) || /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value)) {
     categories.push('emotion');
   }
 
