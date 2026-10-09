@@ -76,3 +76,37 @@ Estes valores NÃO estimam tempo ou RAM de Android/iPhone. Ainda faltam mediçõ
 5. A camada determinística de safety, consentimento, interrupção e síntese continuará soberana, independentemente do escore de IA.
 
 Os 262 testes do repo passaram na execução inicial; são testes de engenharia, não evidência de eficácia terapêutica.
+
+## Resultado final do holdout pré-registrado — NÃO APROVADO
+
+[Workflow do holdout 37866397607](https://github.com/madeirareflo/Ombro-amigo/actions/runs/37866397607)
+Revisão executada: 2c4801ececcc60e31573672f1847ed2661a0c800.
+
+Modelo, revisão, oito exemplos de treino por classe e limiares (similaridade 0,50; margem 0,04) foram congelados ANTES desta execução. Foram usadas 256 frases sintéticas de 32 famílias reservadas, com oito classes equilibradas.
+
+| Indicador | Lexical | MiniLM neural |
+|---|---:|---:|
+| Acurácia da classe candidata | 67,58% | 73,05% |
+| Macro-F1 da classe candidata | 0,6758 | 0,7200 |
+| Decisões aceitas | 25/256 | 130/256 |
+| Decisões aceitas corretas | 24 | 102 |
+| Precisão entre aceitas | 96% | **78,46%** |
+| Cobertura das classes permitidas | 15% | 71,25% |
+| Falsos acionamentos sobre classes protegidas | 1/96 | **16/96** |
+| Abstenções | 231 | 126 |
+
+### Decisão
+
+**NÃO ATIVAR.** O encoder reconhece melhor a classe candidata, mas 16 de 96 frases que deveriam ser protegidas receberam uma intenção acionável incorreta no laboratório. Isso NÃO ocorreu com usuários reais: são apenas decisões simuladas no teste. O resultado não satisfaz o gate de segurança, não permite usar o modelo para orientar escolhas de usuários e torna indefensável uma publicação automática.
+
+Limiares NÃO serão reajustados usando esse holdout. A partir de agora, este conjunto passa a ser evidência histórica de falha, não um conjunto independente para novas otimizações. Futuras tentativas exigem novas famílias de frases, revisão independente, controles determinísticos invioláveis e avaliação cega.
+
+Desempenho Linux no holdout: carregamento 1.062,1 ms, p50 4,1 ms, p95 5,3 ms e RSS final de 658 MiB. Smartphones e navegadores móveis continuam não testados. O job GitHub Actions terminou com sucesso no sentido de execução do experimento; **isso não significa aprovação do modelo para o produto**.
+
+### Melhor caminho arquitetural após o experimento
+
+1. Manter comandos de parar, pular, consentimento, síntese e segurança exclusivamente no motor determinístico.
+2. Para linguagem ambígua, modelos locais podem sugerir uma pergunta de esclarecimento, mas não atribuir fatos ou ativar transições sem confirmação explícita.
+3. Avaliar seleção de frases revisadas por profissionais com regras de elegibilidade, explicação e fallback. Não chamar um catálogo não revisado de resposta clinicamente validada.
+4. Construir uma nova avaliação adversarial independente em pt-BR (negação, citação, terceiros, histórico, ironia, abreviações) antes de qualquer novo ajuste de modelo.
+5. Só depois medir um encoder menor em Android/iOS, sem download automático no aparelho, e validar consumo de memória e privacidade.
