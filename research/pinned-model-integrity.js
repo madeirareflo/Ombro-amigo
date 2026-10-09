@@ -12,12 +12,10 @@ export const PINNED_MODEL_REVISION='b1ece21c06dfce3839272e86b7fa12a985d97a7a';
 export const MODEL_ARTIFACTS=Object.freeze({
   q4: Object.freeze({
     filename:'model_q4.onnx',
-    bytes:919000000, // Informational only: verified against SHA-256 below, not approximate display size.
     sha256:'d43d836fc5e240df9013733ccd214972c5d21bd9ec47e574e4f1e359cf90aed0'
   }),
   q4f16: Object.freeze({
     filename:'model_q4f16.onnx',
-    bytes:570000000, // Informational only; upstream UI rounds to MB.
     sha256:'9e33a5911974174761d0dfdcc0bec975d9c45af0eae5e9eb647b8ba9442a8f91'
   })
 });
