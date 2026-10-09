@@ -46,7 +46,7 @@ test('real trial blocks corrupted weights before importing Transformers.js',asyn
     await writeFile(join(folder,'onnx','model_q4.onnx'),'not model data');
     await assert.rejects(
       ()=>runOfflineTrial({root,wasmRoot:root,dtype:'q4'}),
-      /Pinned model integrity check failed: weight-sha256-mismatch/
+      /Offline model preflight failed: .*weights:weight-sha256-mismatch/
     );
   }finally{await rm(root,{recursive:true,force:true});}
 });
