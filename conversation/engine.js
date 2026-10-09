@@ -1,6 +1,7 @@
 import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
 import { selectGroundedFollowup, groundedBriefReference, isExplicitLonelinessDeclaration } from './grounded-followups.js';
 import { selectAttunedTurn } from './attuned-turns.js';
+import { selectTopicCarryover } from './topic-continuity.js';
 import { isDirectStopCommand } from './autonomy-commands.js';
 import { isThirdPartyOnlyEmotionReport, thirdPartyReportTurn } from './third-party-attribution.js';
 
@@ -467,6 +468,11 @@ export function chooseAdaptiveTurn(state, answer) {
   // Any safety/autonomy/sensitive-topic rule above remains authoritative.
   const attuned = selectAttunedTurn(state, text);
   if (attuned) return attuned;
+
+  // A short, expressly contextual follow-up belongs to the preceding topic,
+  // not an automatic checkpoint or an unrelated new topic.
+  const carried = selectTopicCarryover(state, text);
+  if (carried) return carried;
 
   // Prioriza detalhes declarados, sem atribuir significado clínico a eles.
   if (/\b(mundo|ambiente|ao redor|luz|claro|clara|colorido|colorida|cores)\b/i.test(text) && /\b(assusta|assustado|assustada|medo|estranho|estranha)\b/i.test(text)) {
