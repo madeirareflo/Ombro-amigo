@@ -7,7 +7,7 @@ import {resolve,join,sep} from 'node:path';
 import {stat,readFile,readdir} from 'node:fs/promises';
 import {performance} from 'node:perf_hooks';
 import {assessRewriteProposal} from '../research/local-rewrite-gate.js';
-import {verifyPinnedWeight} from '../research/pinned-model-integrity.js';
+import {preflightLocalBundle} from '../research/offline-bundle-preflight.js';
 
 export const CANDIDATE='onnx-community/Qwen3-0.6B-ONNX';
 export const SYNTHETIC_CASES=Object.freeze([
@@ -55,8 +55,8 @@ export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='w
   if(!local.ok)throw Error('Local model not ready: '+local.reason);
   // Mock is only used in automated code tests. Real inference must verify bytes.
   if(!generatorFactory){
-    const integrity=await verifyPinnedWeight(local.path,dtype);
-    if(!integrity.ok)throw Error('Pinned model integrity check failed: '+integrity.reason);
+    const preflight=await preflightLocalBundle({modelPath:local.path,wasmRoot,dtype});
+    if(!preflight.ready)throw Error('Offline model preflight failed: '+preflight.failures.join(', '));
   }
   if(!['wasm','webgpu'].includes(device))throw Error('Unsupported device');
   if(!['q4','q4f16'].includes(dtype))throw Error('Unreviewed quantization');
