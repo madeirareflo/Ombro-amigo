@@ -134,9 +134,24 @@ function findSummaryItem(itemId){
     .find(node=>node.dataset.itemId===String(itemId)) || null;
 }
 
+function revealSummaryControl(target){
+  const body=target?.closest('.summary-section-body');
+  if(!body?.hidden)return;
+  body.hidden=false;
+  const section=target.closest('[data-section-id]');
+  const id=section?.dataset.sectionId;
+  if(id)collapsedSummarySections.delete(id);
+  const fold=section?.querySelector('.summary-section-fold');
+  if(fold){
+    fold.setAttribute('aria-expanded','true');
+    const count=section.querySelectorAll('.summary-item').length;
+    fold.textContent='Recolher trechos ('+count+')';
+  }
+}
 function focusSummaryItem(itemId,{select=false}={}){
   const target=findSummaryItem(itemId);
   if(!target) return false;
+  revealSummaryControl(target);
   target.focus();
   if(select) target.select();
   return true;
@@ -145,6 +160,7 @@ function focusSummaryItem(itemId,{select=false}={}){
 function focusSummaryAdd(sectionId){
   const target=[...summaryEditor.querySelectorAll('button[data-add-section]')]
     .find(node=>node.dataset.addSection===String(sectionId)) || null;
+  if(target)revealSummaryControl(target);
   target?.focus();
   return Boolean(target);
 }
