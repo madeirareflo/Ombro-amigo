@@ -32,6 +32,7 @@ export function normalizeSummaryModel(model){
               id:String(item?.id || def.id+'-'+index),
               text:String(item?.text || '').trim(),
               origin:item?.origin==='edited' ? 'edited' : 'user',
+              ...(item?.explicitHighlight && item?.origin!=='edited'?{explicitHighlight:true}:{}),
               ...(item?.origin==='edited' ? {} : item?.source && Number.isSafeInteger(item.source.start) && Number.isSafeInteger(item.source.end) ? {source:{start:item.source.start,end:item.source.end}} : {})
             })).filter(item=>item.text)
           : []
