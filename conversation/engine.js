@@ -1,5 +1,6 @@
 import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
 import { selectGroundedFollowup, groundedBriefReference, isExplicitLonelinessDeclaration } from './grounded-followups.js';
+import { selectAttunedTurn } from './attuned-turns.js';
 import { isDirectStopCommand } from './autonomy-commands.js';
 import { isThirdPartyOnlyEmotionReport, thirdPartyReportTurn } from './third-party-attribution.js';
 
@@ -462,6 +463,11 @@ export function chooseAdaptiveTurn(state, answer) {
   const grounded = selectGroundedFollowup(state, text);
   if (grounded) return grounded;
 
+  // Respond to narrow, clearly self-declared feelings before generic checkpoints.
+  // Any safety/autonomy/sensitive-topic rule above remains authoritative.
+  const attuned = selectAttunedTurn(state, text);
+  if (attuned) return attuned;
+
   // Prioriza detalhes declarados, sem atribuir significado clínico a eles.
   if (/\b(mundo|ambiente|ao redor|luz|claro|clara|colorido|colorida|cores)\b/i.test(text) && /\b(assusta|assustado|assustada|medo|estranho|estranha)\b/i.test(text)) {
     const options=[
@@ -605,7 +611,7 @@ function classifyDeclaredContent(text) {
     categories.push('emotion');
   }
 
-  if (/\b(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei|difícil falar|dificil falar|difícil dizer|dificil dizer|tenho vergonha de falar|tenho medo de contar)\b/i.test(value)) {
+  if (/\b(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei|difícil falar|dificil falar|difícil dizer|dificil dizer|tenho vergonha de (?:falar|contar)|tenho medo de contar)\b/i.test(value)) {
     categories.push('difficulty');
   }
 
