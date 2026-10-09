@@ -166,3 +166,28 @@ test('skip button and typed skip both preserve independent transcript history', 
   assert.equal(state.entries.length,0);
   assert.equal(state.transcript.filter(x=>x.role==='user').length,2);
 });
+
+
+test('record-only mode respects an explicit stop and never summarizes it as a fact', () => {
+  for (const phrase of ['Quero encerrar', 'Por hoje é só.', 'Não quero mais falar.']) {
+    const state=createConversation({mode:'record',depth:'deep'});
+    openingQuestion(state);
+    const reply=nextQuestion(state,phrase);
+    assert.match(reply,/parar por aqui|voltar quando quiser/i);
+    assert.equal(state.transcript.at(-2).meta,'control:stop');
+    assert.deepEqual(state.entries,[],phrase);
+    assert.deepEqual(buildStructuredSummary(state),{
+      facts:[],emotions:[],difficulties:[],sessionPoints:[]
+    });
+  }
+});
+
+test('record-only mode does not treat quoted/historical stop as the user asking to stop', () => {
+  const state=createConversation({mode:'record',depth:'medium'});
+  openingQuestion(state);
+  const msg='Ontem minha amiga disse que queria parar uma conversa.';
+  const reply=nextQuestion(state,msg);
+  assert.match(reply,/registrado/i);
+  assert.equal(state.entries[0].text,msg);
+  assert.equal(state.transcript.at(-2).meta,undefined);
+});
