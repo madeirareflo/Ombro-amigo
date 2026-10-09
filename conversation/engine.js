@@ -74,6 +74,10 @@ const BOUNDARY_RULES = [
 const SENSITIVE_TOPIC_PATTERN = /\b(abuso|abusado|abusada|violência|violencia|estupro|agressão|agressao|assédio|assedio|luto|falecimento|morreu|morte|trauma|traumático|traumatica|traumática)\b/i;
 const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|não faço ideia|nao faco ideia|difícil dizer|dificil dizer|não consigo explicar|nao consigo explicar|não sei o que sinto|nao sei o que sinto)[.!?]*$/i;
 
+// In record-only mode an explicit request to stop is a control command,
+// whereas a historical/quoted mention remains a literal note.
+const RECORD_STOP_PATTERN = /^(quero parar|prefiro parar(?: por aqui)?|chega por hoje|não quero continuar|nao quero continuar|não quero mais falar|nao quero mais falar|quero encerrar|por hoje é só|por hoje e so|não quero aprofundar|nao quero aprofundar)[?!.\s]*$/i;
+
 const CONTROL_INTENTS = [
   {
     key:'skip',
@@ -286,6 +290,7 @@ export function openingQuestion(state) {
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
   const controlIntent = detectConversationControlIntent(text);
+  const recordStop = state.mode === 'record' && RECORD_STOP_PATTERN.test(text);
   const briefReply = (controlIntent || state.mode === 'record') ? null : classifyBriefReply(state, text);
   const context = ensureConversationContext(state);
   if (briefReply === 'scope_all') context.answerScope = 'all';
@@ -294,7 +299,7 @@ export function nextQuestion(state, answer) {
 
   if (controlIntent === 'skip') state.skips = Number(state.skips || 0) + 1;
   else state.skips = 0;
-  if (!controlIntent && !briefReply) {
+  if (!controlIntent && !briefReply && !recordStop) {
     state.entries.push({
       kind: 'user_statement',
       text,
@@ -307,7 +312,7 @@ export function nextQuestion(state, answer) {
   state.transcript.push({
     role: 'user',
     text,
-    ...(controlIntent ? { meta: 'control:'+controlIntent } : {})
+    ...(controlIntent ? { meta: 'control:'+controlIntent } : recordStop ? { meta:'control:stop' } : {})
   });
 
   const turn = controlIntent === 'skip'
@@ -321,6 +326,8 @@ export function nextQuestion(state, answer) {
             text: 'Certo. Vou usar apenas o que você já escreveu para montar uma síntese editável.',
             ruleId: 'AUTONOMY-SUMMARY-01'
           }
+        : recordStop
+          ? { text: 'Tudo bem. Podemos parar por aqui. Você pode voltar quando quiser.', ruleId: 'AUTONOMY-SKIP-01' }
         : state.mode === 'record'
           ? {
               text: 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.',
