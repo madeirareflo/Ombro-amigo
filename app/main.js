@@ -15,6 +15,7 @@ import {
 import { urgentHelpGuidance, detectExplicitImmediateDanger, assessSafety } from '../safety/policy.js';
 import { copyText } from './clipboard.js';
 import { extractTraceableSummary, hasExactProvenance } from './extractive-summary.js';
+import { selectedHighlight, highlightedExtractiveSummary } from './user-highlights.js';
 import {
   createSummaryModel,
   normalizeSummaryModel,
@@ -39,6 +40,7 @@ const replyForm=$('#reply-form');
 const freePanel=$('#free-writing-panel');
 const freeText=$('#free-writing-text');
 const freeStatus=$('#free-writing-status');
+const highlightStatus=$('#free-highlight-status');
 const depthLabel=$('#depth-label');
 const summaryText=$('#summary-text');
 const summaryEditor=$('#summary-editor');
@@ -186,7 +188,7 @@ function renderSummaryEditor(){
       const badge=document.createElement('span');
       badge.id='summary-origin-'+section.id+'-'+section.items.indexOf(item);
       badge.className='origin-badge';
-      badge.textContent=item.origin==='edited'?'Você editou':'Você escreveu';
+      badge.textContent=item.origin==='edited'?'Você editou':item.explicitHighlight?'Você destacou':'Você escreveu';
       area.setAttribute('aria-describedby',badge.id);
       if(session?.mode==='free' && item.source && hasExactProvenance(session.entries?.[0]?.text,item)){
         const evidence=document.createElement('small');
@@ -247,7 +249,7 @@ function renderSummaryEditor(){
 function createOrRestoreSummary(savedModel=null){
   const structured=buildStructuredSummary(session);
   summaryModel=normalizeSummaryModel(savedModel) || (session?.mode==='free'
-    ? normalizeSummaryModel(extractTraceableSummary((session.entries||[]).map(entry=>entry.text).join('\n\n')))
+    ? normalizeSummaryModel(highlightedExtractiveSummary((session.entries||[]).map(entry=>entry.text).join('\n\n'),session.userHighlight))
     : createSummaryModel(structured));
   syncSummaryText();
   renderSummaryEditor();
@@ -295,6 +297,7 @@ function start(mode){
     session.transcript=[];
     session.ruleHistory=[];
     session.entries=[];
+    session.userHighlight=null;
     freeText.value='';
     freeStatus.textContent='Use “Guardar texto” para salvar localmente antes de sair.';
   }
@@ -316,7 +319,10 @@ async function resumeSavedConversation(){
   session=saved.session;
   depthLabel.textContent=session.mode==='free'?'Escrita livre':depthName(session.depth);
   configureWritingMode();
-  if(session.mode==='free') freeText.value=(session.entries||[]).map(item=>item.text).join('\n\n');
+  if(session.mode==='free'){
+    freeText.value=(session.entries||[]).map(item=>item.text).join('\n\n');
+    highlightStatus.textContent=session.userHighlight?'Trecho destacado para a próxima síntese.':'Opcional: selecione um trecho e toque em “Destacar seleção”.';
+  }
   else renderConversation(session);
   summaryModel=normalizeSummaryModel(saved.summaryModel);
   summaryText.value=saved.summaryDraft || '';
@@ -467,6 +473,10 @@ function snapshotFreeWriting(){
   if(session?.mode!=='free')return false;
   // Do not trim the persisted source: the person controls all spacing and punctuation.
   const text=freeText.value;
+  if(session.userHighlight && text.slice(session.userHighlight.start,session.userHighlight.end)!==session.userHighlight.text){
+    session.userHighlight=null;
+    highlightStatus.textContent='O texto mudou; selecione novamente o trecho que deseja destacar.';
+  }
   session.entries=text.trim()?[{kind:'user_statement',text,source:'declared',categories:['fact']}]:[];
   session.transcript=text.trim()?[{role:'user',text}]:[];
   session.turn=text.trim()?1:0;
@@ -495,6 +505,14 @@ async function retainFreeWriting(){
   await saveFreeWriting();
   return true;
 }
+$('#highlight-free-writing').addEventListener('click',()=>{
+  if(session?.mode!=='free')return;
+  const candidate=selectedHighlight(freeText.value,freeText.selectionStart,freeText.selectionEnd);
+  if(!candidate){highlightStatus.textContent='Selecione primeiro um trecho do texto.';return;}
+  session.userHighlight=candidate;
+  highlightStatus.textContent='Trecho escolhido por você para aparecer em destaque na síntese.';
+  void saveFreeWriting({showStatus:false});
+});
 $('#save-free-writing').addEventListener('click',()=>{void saveFreeWriting();});
 $('#organize-free-writing').addEventListener('click',async()=>{
   if(!await retainFreeWriting())return;
