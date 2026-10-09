@@ -45,6 +45,12 @@ export function isThirdPartyOnlyEmotionReport(text) {
 /** A safe next step that does not say the user felt the third-party emotion. */
 export function thirdPartyReportTurn(text) {
   if (!isThirdPartyOnlyEmotionReport(text)) return null;
+  // 'E eu também' can refer to feelings, events or agreement. Clarify rather
+  // than assign the other person's emotion to the speaker automatically.
+  if (/\beu tambem\b/.test(normalize(text))) return {
+    text:'Você escreveu “eu também” ao relatar algo sobre outra pessoa. Gostaria de explicar com suas palavras o que quis dizer ou deixar essa parte em aberto?',
+    ruleId:'CONV-CLARIFY-01'
+  };
   return {
     text:'Você está relatando algo sobre outra pessoa. O que desse relato gostaria de guardar para conversar na sessão, com suas próprias palavras?',
     ruleId:'CONV-REFLECT-01'
