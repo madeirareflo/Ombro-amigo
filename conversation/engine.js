@@ -76,6 +76,13 @@ const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|não faço ideia|
 
 const CONTROL_INTENTS = [
   {
+    key:'skip',
+    ruleId:'AUTONOMY-SKIP-01',
+    // An anchored user command: quoted, third-person and historical statements
+    // must not be interpreted as a request to skip.
+    pattern:/^(prefiro (?:não|nao) responder(?: (?:essa|esta|a) pergunta)?|(?:não|nao) quero responder(?: (?:essa|esta|a) pergunta)?|pula (?:essa|esta|a) pergunta|pular pergunta|pode pular(?: essa pergunta)?|quero pular(?: essa pergunta)?|passo essa(?: pergunta)?|me (?:faz|faça) outra pergunta)[?!.\s]*$/i
+  },
+  {
     key:'clarify',
     ruleId:'CONV-CLARIFY-01',
     pattern:/^(como assim|não entendi|nao entendi|não entendi essa pergunta|nao entendi essa pergunta|o que você quer dizer|o que voce quer dizer|o que quer dizer com isso|pode explicar|pode reformular|explica melhor|explica de outro jeito|não saquei|nao saquei|não ficou claro|nao ficou claro)[?!.\s]*$/i
@@ -285,7 +292,8 @@ export function nextQuestion(state, answer) {
   if (UNCERTAINTY_PATTERN.test(text)) context.uncertaintyStreak += 1;
   else if (!controlIntent) context.uncertaintyStreak = 0;
 
-  state.skips = 0;
+  if (controlIntent === 'skip') state.skips = Number(state.skips || 0) + 1;
+  else state.skips = 0;
   if (!controlIntent && !briefReply) {
     state.entries.push({
       kind: 'user_statement',
@@ -302,7 +310,9 @@ export function nextQuestion(state, answer) {
     ...(controlIntent ? { meta: 'control:'+controlIntent } : {})
   });
 
-  const turn = controlIntent === 'clarify'
+  const turn = controlIntent === 'skip'
+    ? skipTurn(state)
+    : controlIntent === 'clarify'
     ? clarificationTurn(state)
     : controlIntent === 'continue'
       ? continuationTurn(state)
@@ -346,18 +356,23 @@ export function skipQuestion(state) {
     meta: 'skip'
   });
 
-  const question = state.skips >= 2
-    ? 'Sem problema. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
-    : 'Sem problema. Podemos ir por outro caminho: você prefere falar do que aconteceu, de como ficou depois, ou ir direto para uma síntese?';
-  const ruleId='AUTONOMY-SKIP-01';
+  const turn=skipTurn(state);
+  state.lastQuestion = turn.text;
+  state.lastRuleId = turn.ruleId;
+  recordRule(state, turn.ruleId);
+  markQuestionUsed(state, turn.text);
+  noteQuestionContext(state, turn.text);
+  state.transcript.push({ role: 'ai', text: turn.text });
+  return turn.text;
+}
 
-  state.lastQuestion = question;
-  state.lastRuleId = ruleId;
-  recordRule(state, ruleId);
-  markQuestionUsed(state, question);
-  noteQuestionContext(state, question);
-  state.transcript.push({ role: 'ai', text: question });
-  return question;
+function skipTurn(state) {
+  return {
+    text: state.skips >= 2
+      ? 'Sem problema. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
+      : 'Sem problema. Podemos ir por outro caminho: você prefere falar do que aconteceu, de como ficou depois, ou ir direto para uma síntese?',
+    ruleId: 'AUTONOMY-SKIP-01'
+  };
 }
 
 export function detectConversationControlIntent(answer) {
