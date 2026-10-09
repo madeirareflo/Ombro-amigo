@@ -7,6 +7,7 @@ import {resolve,join,sep} from 'node:path';
 import {stat,readFile,readdir} from 'node:fs/promises';
 import {performance} from 'node:perf_hooks';
 import {assessRewriteProposal} from '../research/local-rewrite-gate.js';
+import {verifyPinnedWeight} from '../research/pinned-model-integrity.js';
 
 export const CANDIDATE='onnx-community/Qwen3-0.6B-ONNX';
 export const SYNTHETIC_CASES=Object.freeze([
@@ -51,8 +52,14 @@ export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='w
   if(modelId!==CANDIDATE)throw Error('Only explicitly reviewed candidate permitted');
   const local=await checkLocalFiles(root,modelId);
   if(!local.ok)throw Error('Local model not ready: '+local.reason);
+  // Mock is only used in automated code tests. Real inference must verify bytes.
+  if(!generatorFactory){
+    const integrity=await verifyPinnedWeight(local.path,dtype);
+    if(!integrity.ok)throw Error('Pinned model integrity check failed: '+integrity.reason);
+  }
   if(!wasmRoot && !generatorFactory)throw Error('LOCAL_WASM_ROOT required: remote runtime downloads are forbidden');
   if(!['wasm','webgpu'].includes(device))throw Error('Unsupported device');
+  if(!['q4','q4f16'].includes(dtype))throw Error('Unreviewed quantization');
   let generator=generatorFactory;
   if(!generator){
     // Lazy import: no dependencies installed or models downloaded automatically.
