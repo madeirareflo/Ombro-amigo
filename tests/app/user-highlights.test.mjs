@@ -26,7 +26,7 @@ test('stale, whitespace or invalid selections cannot become claims',()=>{
 });
 test('the UI restores and invalidates highlighted excerpts after changes',async()=>{
  const main=await readFile(new URL('../../app/main.js',import.meta.url),'utf8');
- assert.match(main,/id==='free'/);
+ assert.match(main,/session\?\.mode!=='free'/);
  assert.match(main,/session\.userHighlight=null/);
  assert.match(main,/text\.slice\(session\.userHighlight\.start,session\.userHighlight\.end\)!==session\.userHighlight\.text/);
  assert.match(main,/highlightedExtractiveSummary/);
