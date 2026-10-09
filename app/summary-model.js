@@ -119,3 +119,16 @@ export function freeWritingSummaryToText(model){
   if(!sections.length)return '';
   return ['Rascunho para revisar antes de compartilhar:',...sections,'Revise: você pode apagar ou corrigir qualquer trecho.'].join('\n\n');
 }
+
+/** Move only the chosen item inside its section; do not paraphrase content. */
+export function moveSummaryItem(model,sectionId,itemId,direction){
+  const normalized=normalizeSummaryModel(model);
+  if(!normalized)return null;
+  const section=normalized.sections.find(entry=>entry.id===sectionId);
+  if(!section || ![-1,1].includes(direction))return normalized;
+  const index=section.items.findIndex(entry=>entry.id===itemId);
+  const target=index+direction;
+  if(index<0 || target<0 || target>=section.items.length)return normalized;
+  [section.items[index],section.items[target]]=[section.items[target],section.items[index]];
+  return normalized;
+}
