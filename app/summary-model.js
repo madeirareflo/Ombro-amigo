@@ -95,3 +95,26 @@ function sentence(text){
   if(!value) return '';
   return value.charAt(0).toUpperCase()+value.slice(1).replace(/[.!?]+$/,'')+'.';
 }
+
+/**
+ * Export for free writing. Preserve original and user-edited punctuation,
+ * capitalization, line breaks and uncertainty, without filling empty sections.
+ */
+export function freeWritingSummaryToText(model){
+  const normalized=normalizeSummaryModel(model);
+  if(!normalized) return '';
+  const headings={
+    facts:'Trechos do meu relato',
+    emotions:'Sentimentos que nomeei',
+    difficulties:'O que eu disse estar difícil',
+    sessionPoints:'O que quero levar à sessão'
+  };
+  const sections=normalized.sections
+    .filter(section=>section.items.length)
+    .map(section=>[
+      headings[section.id] || section.title,
+      ...section.items.map(item=>item.text)
+    ].join('\n'));
+  if(!sections.length)return '';
+  return ['Rascunho para revisar antes de compartilhar:',...sections,'Revise: você pode apagar ou corrigir qualquer trecho.'].join('\n\n');
+}
