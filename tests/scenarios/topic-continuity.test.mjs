@@ -7,9 +7,9 @@ test('two-step sadness context stays on what the person said, not session checkp
   const state=createConversation({mode:'session',depth:'light'});
   openingQuestion(state);
   const first=nextQuestion(state,'Estou triste');
-  assert.match(first,/como está se sentindo/i);
+  assert.match(first,/poxa|quer me contar um pouco mais/i);
   const second=nextQuestion(state,'no trabalho');
-  assert.match(second,/quando ou onde isso aparece/i);
+  assert.match(second,/como costuma ser quando isso acontece/i);
   assert.doesNotMatch(second,/material suficiente|próxima sessão|já temos material/i);
   assert.deepEqual(state.entries.map(x=>x.text),['Estou triste','no trabalho']);
   assert.deepEqual(buildStructuredSummary(state).emotions,['Estou triste']);
@@ -21,7 +21,7 @@ test('loneliness declared first, location fragment next: respect context without
   openingQuestion(state);
   nextQuestion(state,'me sinto solitário');
   const response=nextQuestion(state,'em casa');
-  assert.match(response,/quer contar um exemplo|prefere só registrar/i);
+  assert.match(response,/como costuma ser quando isso acontece/i);
   assert.doesNotMatch(response,/sua família te deixa|você está isolado|depressão/i);
   const summary=buildStructuredSummary(state);
   assert.ok(JSON.stringify(summary).includes('em casa'));

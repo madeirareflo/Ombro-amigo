@@ -42,7 +42,7 @@ test('every mode can respond to a declared feeling without generic session check
     const state=createConversation({mode,depth:'light'});
     openingQuestion(state);
     const result=nextQuestion(state,'Estou triste.');
-    assert.match(result,/você falou de como está se sentindo|ficar nas suas palavras/i);
+    assert.match(result,/poxa|quer me contar um pouco mais/i);
     assert.doesNotMatch(result,/material suficiente|já dá para escolher|próxima sessão\?/i);
     assert.equal((result.match(/\?/g)||[]).length,1);
     assert.equal(buildStructuredSummary(state).emotions.includes('Estou triste.'),true);
@@ -53,7 +53,7 @@ test('a different first-person feeling is reflected without asserting its cause 
   const state=createConversation({mode:'session',depth:'deep'});
   openingQuestion(state);
   const first=nextQuestion(state,'me sinto ansiosa');
-  assert.match(first,/você mencionou como está se sentindo/i);
+  assert.match(first,/o que tem passado pela sua cabeça/i);
   assert.doesNotMatch(first,/doença|ansiedade clínica|depressão|porque você/i);
   const second=nextQuestion(state,'me sinto ansiosa');
   assert.notEqual(first,second);
@@ -65,7 +65,7 @@ test('an expressed difficulty to talk offers choice and does not demand details'
   const state=createConversation({mode:'session',depth:'deep'});
   openingQuestion(state);
   const reply=nextQuestion(state,'tenho vergonha de contar isso');
-  assert.match(reply,/primeira frase|não entrar nesse assunto/i);
+  assert.match(reply,/quer tentar aos poucos/i);
   assert.doesNotMatch(reply,/quem fez|onde foi|me conte tudo|por que tem vergonha/i);
   assert.ok(buildStructuredSummary(state).difficulties.includes('tenho vergonha de contar isso'));
 });
@@ -75,7 +75,7 @@ test('first-person quotes about others do not become personal emotion in the sum
   openingQuestion(state);
   const said='Minha irmã escreveu "estou triste".';
   const reply=nextQuestion(state,said);
-  assert.doesNotMatch(reply,/você falou de como está se sentindo/i);
+  assert.doesNotMatch(reply,/poxa|quer me contar um pouco mais/i);
   assert.deepEqual(buildStructuredSummary(state).emotions,[]);
 });
 

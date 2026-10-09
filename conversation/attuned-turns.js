@@ -19,24 +19,24 @@ const DECLARATIONS = Object.freeze([
     // First-person declaration, not a quote, negation, or attributed feeling.
     pattern: /^(?:eu )?(?:estou|to|me sinto|eu me sinto) (?:muito )?(?:triste|chatead[oa]|abatid[oa])(?: (?:hoje|ultimamente|agora))?$/,
     responses: [
-      'Você falou de como está se sentindo. Quer contar o que gostaria de registrar sobre isso ou prefere só deixar anotado por enquanto?',
-      'Podemos ficar nas suas palavras, sem procurar uma explicação agora. Gostaria de acrescentar algo sobre esse sentimento?'
+      'Poxa. Quer me contar um pouco mais?',
+      'Tudo bem ir aos poucos. O que tem sido mais difícil?'
     ]
   },
   {
     id: 'anxiety',
     pattern: /^(?:eu )?(?:estou|to|me sinto|eu me sinto) (?:muito )?(?:ansios[oa]|nervos[oa]|preocupad[oa])(?: (?:hoje|ultimamente|agora))?$/,
     responses: [
-      'Você mencionou como está se sentindo. O que seria importante registrar sobre esse momento?',
-      'Não precisamos chegar a uma conclusão agora. Você quer contar algo mais sobre isso ou deixar assim?'
+      'Entendi. O que tem passado pela sua cabeça?',
+      'Sem pressa. Tem algo sobre isso que você queira acrescentar?'
     ]
   },
   {
     id: 'difficulty_speaking',
     pattern: /^(?:eu )?(?:tenho vergonha de (?:falar|contar)(?: (?:isso|sobre isso))?|nao consigo (?:falar|contar)(?: (?:isso|sobre isso))?|tenho medo de (?:falar|contar)(?: (?:isso|sobre isso))?)$/,
     responses: [
-      'Falar disso parece difícil pelo que você escreveu. Quer tentar uma primeira frase para a sessão ou prefere não entrar nesse assunto agora?',
-      'Você não precisa contar detalhes aqui. Prefere registrar só que está difícil falar disso?'
+      'Imagino que não seja simples colocar isso em palavras. Quer tentar aos poucos?',
+      'Não precisa entrar em detalhes. Podemos deixar isso registrado por enquanto.'
     ]
   }
 ]);

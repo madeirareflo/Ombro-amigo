@@ -43,9 +43,9 @@ export function selectTopicCarryover(state, text) {
   if(!topic) return null;
   const options=[
     {id:'carry-example',dimension:'circumstances',
-      text:'Você acrescentou uma parte sobre quando ou onde isso aparece. Quer contar um exemplo, com suas palavras, ou prefere só registrar esse ponto?'},
+      text:'Entendi. E como costuma ser quando isso acontece?'},
     {id:'carry-choice',dimension:'choice',
-      text:'Podemos continuar a partir dessa parte, sem tirar conclusões. O que você prefere guardar no registro agora?'}
+      text:'E o que mais vem à sua cabeça quando pensa nisso?'}
   ];
   const used=new Set(Array.isArray(state.usedQuestions)?state.usedQuestions:[]);
   const found=options.find(x=>!used.has(x.text));

@@ -19,13 +19,13 @@ test('screen-reproduction: motivation scope -> loneliness -> tudo stays connecte
   assert.equal((first.match(/\?/g)||[]).length,1);
 
   const second=nextQuestion(state,'eme sinto solitario');
-  assert.match(second,/se sente só|se sentir só/i);
+  assert.match(second,/você disse que se sente só|momento específico/i);
   assert.doesNotMatch(second,/próxima sessão|material suficiente|diagnóstico/i);
   assert.equal((second.match(/\?/g)||[]).length,1);
 
   const third=nextQuestion(state,'tudo');
   assert.match(third,/“tudo”|esse “tudo”/i);
-  assert.match(third,/em aberto|registrar/i);
+  assert.match(third,/alguma parte em especial|um pouco melhor/i);
   assert.doesNotMatch(third,/já apareceu material suficiente/i);
   assert.equal((third.match(/\?/g)||[]).length,1);
 
@@ -118,7 +118,7 @@ test('repeated explicit loneliness does not repeat the same follow-up text', () 
   const first=nextQuestion(state,'me sinto solitário');
   const second=nextQuestion(state,'me sinto solitário');
   assert.notEqual(first,second);
-  assert.match(second,/registrad|colocar isso em palavras/i);
+  assert.match(second,/estou acompanhando|momento em que isso fica mais forte/i);
 });
 
 test('grounded module is offline, non-generative and free of external services', async () => {
