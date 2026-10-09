@@ -1,5 +1,6 @@
 import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
 import { selectGroundedFollowup, groundedBriefReference, isExplicitLonelinessDeclaration } from './grounded-followups.js';
+import { isDirectStopCommand } from './autonomy-commands.js';
 
 const START_QUESTIONS = {
   event: 'Isso tem mais a ver com algo que aconteceu ou com como você se sentiu depois?',
@@ -61,7 +62,8 @@ const BOUNDARY_RULES = [
   {
     key: 'stop',
     ruleId: 'AUTONOMY-SKIP-01',
-    pattern: /\b(não quero aprofundar|nao quero aprofundar|quero parar|prefiro parar|chega por hoje|não quero continuar|nao quero continuar|não quero mais falar|nao quero mais falar|quero encerrar|por hoje e so)\b|por hoje é só/i,
+    // Only a direct command; quoted stories never become autonomy actions.
+    pattern: null,
     response: 'Tudo bem. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
   },
   {
@@ -77,7 +79,6 @@ const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|não faço ideia|
 
 // In record-only mode an explicit request to stop is a control command,
 // whereas a historical/quoted mention remains a literal note.
-const RECORD_STOP_PATTERN = /^(quero parar|prefiro parar(?: por aqui)?|chega por hoje|não quero continuar|nao quero continuar|não quero mais falar|nao quero mais falar|quero encerrar|por hoje é só|por hoje e so|não quero aprofundar|nao quero aprofundar)[?!.\s]*$/i;
 
 const CONTROL_INTENTS = [
   {
@@ -293,7 +294,7 @@ export function openingQuestion(state) {
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
   const controlIntent = detectConversationControlIntent(text);
-  const recordStop = state.mode === 'record' && RECORD_STOP_PATTERN.test(text);
+  const recordStop = state.mode === 'record' && isDirectStopCommand(text);
   const briefReply = (controlIntent || state.mode === 'record') ? null : classifyBriefReply(state, text);
   const context = ensureConversationContext(state);
   if (briefReply === 'scope_all') context.answerScope = 'all';
@@ -611,7 +612,9 @@ function classifyDeclaredContent(text) {
 }
 
 function matchBoundaryRule(text) {
-  return BOUNDARY_RULES.find(rule => rule.pattern.test(String(text || ''))) || null;
+  return BOUNDARY_RULES.find(rule => rule.key === 'stop'
+    ? isDirectStopCommand(text)
+    : rule.pattern.test(String(text || ''))) || null;
 }
 
 function section(title, items) {
