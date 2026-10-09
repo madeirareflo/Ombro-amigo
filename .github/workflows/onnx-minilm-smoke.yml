@@ -1,4 +1,4 @@
-name: Experimental ONNX CPU benchmark (public synthetic data)
+name: Experimental ONNX CPU benchmark (synthetic, validation calibration)
 
 on:
   push:
@@ -40,5 +40,5 @@ jobs:
           --model-root "$RUNNER_TEMP/ombro-onnx-models"
           --model-name ptbr-minilm-l12-q8
           --split validation
-          --max-samples 32
+          --max-samples 64
           --train-per-label 8
