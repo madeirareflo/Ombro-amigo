@@ -4,7 +4,7 @@
  * Never use private user writing in this benchmark.
  */
 import {resolve,join,sep} from 'node:path';
-import {stat,readFile} from 'node:fs/promises';
+import {stat,readFile,readdir} from 'node:fs/promises';
 import {performance} from 'node:perf_hooks';
 import {assessRewriteProposal} from '../research/local-rewrite-gate.js';
 
@@ -35,7 +35,10 @@ export async function checkLocalFiles(root,modelId=CANDIDATE){
     const details=await stat(config);
     if(!details.isFile())return {ok:false,reason:'config-missing'};
     const settings=JSON.parse(await readFile(config,'utf8'));
-    return {ok:Boolean(settings.model_type),reason:settings.model_type?'ready-for-manual-trial':'model-type-missing',path};
+    if(!settings.model_type)return {ok:false,reason:'model-type-missing'};
+    const files=await readdir(join(path,'onnx')).catch(()=>[]);
+    if(!files.some(name=>name.endsWith('.onnx')))return {ok:false,reason:'onnx-weights-missing'};
+    return {ok:true,reason:'ready-for-manual-trial',path};
   }catch{return {ok:false,reason:'config-missing'};}
 }
 export function measureCandidate(result,input,elapsedMs){
