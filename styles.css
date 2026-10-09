@@ -63,3 +63,31 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;padding:0 1rem calc
 .free-writing-panel label{font-weight:650}
 .free-writing-panel textarea{width:100%;min-height:260px;resize:vertical;padding:1rem;border:1px solid var(--border);border-radius:16px;line-height:1.65;background:var(--surface);color:var(--ink)}
 .free-writing-panel .actions{display:flex;gap:.65rem;flex-wrap:wrap}
+
+
+/* Summary review: controls must not squeeze the person's writing on phones. */
+.summary-section-header{flex-wrap:wrap;gap:.45rem .75rem}
+.summary-section-header h3{flex:1 1 11rem;min-width:0;overflow-wrap:anywhere}
+.summary-section-fold{flex:0 0 auto;min-height:44px;padding:.5rem .75rem;background:transparent;color:var(--accent);border:1px solid var(--border);font-size:.82rem}
+.summary-section-body[hidden]{display:none!important}
+.summary-item{grid-template-columns:minmax(0,1fr) auto;min-width:0;align-items:start}
+.summary-item textarea{grid-column:1;grid-row:1;min-width:0}
+.summary-item .source-evidence{grid-column:1/-1;grid-row:auto;overflow-wrap:anywhere;white-space:pre-wrap}
+.summary-move-controls{grid-column:1;display:flex;flex-wrap:wrap;gap:.5rem}
+.summary-move-controls button{min-height:44px;padding:.5rem .8rem;background:var(--soft);color:var(--accent);border:1px solid var(--border);flex:1 1 6rem}
+.summary-move-controls button:disabled{opacity:.45;cursor:not-allowed}
+.summary-item .origin-badge{grid-column:1;grid-row:auto}
+.summary-item .remove-item{grid-column:2;grid-row:1;align-self:start}
+.summary-section-fold:focus-visible,.summary-move-controls button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media(max-width:560px){
+  .summary-section{padding:.8rem}
+  .summary-section-header{align-items:flex-start}
+  .summary-section-header h3{flex-basis:100%}
+  .summary-section-header .structure-badge{flex:1 1 auto}
+  .summary-section-fold{max-width:100%;white-space:normal;text-align:center}
+  .summary-item{grid-template-columns:minmax(0,1fr)}
+  .summary-item textarea{grid-column:1}
+  .summary-item .remove-item{grid-column:1;grid-row:auto;justify-self:stretch}
+  .summary-move-controls{grid-column:1}
+  .summary-move-controls button{flex:1 1 5rem}
+}
