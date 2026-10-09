@@ -48,7 +48,7 @@ export function selectGroundedFollowup(state, text) {
   if (isExplicitLonelinessDeclaration(text)) {
     const choice=firstUnasked(state,[
       { id:'loneliness-declared-1',
-        text:'Imagino que isso não seja fácil. Quando você costuma se sentir assim?' },
+        text:'Você disse que se sente só. Isso costuma acontecer em algum momento específico?' },
       { id:'loneliness-declared-2',
         text:'Estou acompanhando. Tem algum momento em que isso fica mais forte?' }
     ]);
