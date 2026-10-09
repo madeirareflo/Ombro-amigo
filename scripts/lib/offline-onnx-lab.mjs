@@ -88,3 +88,51 @@ export function classifyWithLocalEmbedding(vector, {
   if (margin < minimumMargin) return result(label, similarity, margin, 'ambiguous-label');
   return result(label, similarity, margin, null);
 }
+
+
+// Select candidates ONLY on the declared validation split; never use holdout
+// to choose the thresholds. No user text is logged or stored by this helper.
+export function sweepLocalEmbeddingThresholds(rows, vectors, labelVectors, evaluateIntentRows) {
+  if (rows.length !== vectors.length || !rows.length) throw new Error('invalid-calibration-sample');
+  if (typeof evaluateIntentRows !== 'function') throw new Error('missing-evaluation-function');
+  const trials = [];
+  for (const similarity of [0.40, 0.50, 0.60, 0.70, 0.80]) {
+    for (const margin of [0, 0.01, 0.02, 0.04, 0.08]) {
+      let i = 0;
+      const metrics = evaluateIntentRows(rows, row =>
+        classifyWithLocalEmbedding(vectors[i++], {
+          labelVectors,
+          text: row.text,
+          lastQuestionDimension: row.questionDimension,
+          minimumSimilarity: similarity,
+          minimumMargin: margin
+        }));
+      const trialEligible = metrics.protectedFalseActivations === 0 &&
+        metrics.accepted > 0 &&
+        metrics.acceptedPrecision >= 0.99 &&
+        metrics.safeCoverage >= 0.25;
+      trials.push({
+        similarity, margin, trialEligible,
+        accepted: metrics.accepted,
+        acceptedCorrect: metrics.acceptedCorrect,
+        acceptedPrecision: metrics.acceptedPrecision,
+        safeCoverage: metrics.safeCoverage,
+        protectedFalseActivations: metrics.protectedFalseActivations
+      });
+    }
+  }
+  const ranked = [...trials].sort((a, b) =>
+    Number(b.trialEligible) - Number(a.trialEligible) ||
+    b.safeCoverage - a.safeCoverage ||
+    b.acceptedPrecision - a.acceptedPrecision ||
+    b.similarity - a.similarity ||
+    b.margin - a.margin);
+  return {
+    gridCount: trials.length,
+    eligibleCount: trials.filter(item => item.trialEligible).length,
+    bestValidationOnly: ranked.find(item => item.trialEligible) || null,
+    top: ranked.slice(0, 5),
+    releaseReady: false,
+    note: 'Validation-only synthetic threshold search. Requires untouched holdout and independent safety review before any product use.'
+  };
+}
