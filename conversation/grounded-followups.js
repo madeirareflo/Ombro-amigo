@@ -39,18 +39,18 @@ export function selectGroundedFollowup(state, text) {
   if (isMotivationScopeReply(state,text)) {
     const choice=firstUnasked(state,[
       { id:'motivation-scope-1',
-        text:'Você escolheu falar da vontade de fazer as coisas. O que gostaria de registrar sobre essa parte?' },
+        text:'E como anda sua vontade de fazer as coisas?' },
       { id:'motivation-scope-2',
-        text:'Sem supor se isso aumentou ou diminuiu, como você descreveria a sua vontade de fazer as coisas agora?' }
+        text:'O que você tem notado sobre essa vontade ultimamente?' }
     ]);
     return choice && { ...choice, ruleId:'CONV-REFLECT-01' };
   }
   if (isExplicitLonelinessDeclaration(text)) {
     const choice=firstUnasked(state,[
       { id:'loneliness-declared-1',
-        text:'Você contou que se sente só. Quer registrar como isso aparece no seu dia ou apenas guardar essa frase por enquanto?' },
+        text:'Imagino que isso não seja fácil. Quando você costuma se sentir assim?' },
       { id:'loneliness-declared-2',
-        text:'Obrigado por colocar isso em palavras. Você prefere contar uma situação relacionada ou deixar esse ponto registrado?' }
+        text:'Estou acompanhando. Tem algum momento em que isso fica mais forte?' }
     ]);
     return choice && { ...choice, ruleId:'CONV-REFLECT-01' };
   }
@@ -69,8 +69,8 @@ export function groundedBriefReference(state, answer) {
   const previousUser=history.slice(0,-1).reverse().find(row=>row?.role==='user');
   if (!isExplicitLonelinessDeclaration(previousUser?.text)) return null;
   const options=[
-    'Você escreveu “tudo” depois de falar sobre se sentir só. Quer explicar com suas palavras o que significa “tudo” para você ou deixar isso em aberto?',
-    'Para eu não completar sua resposta por você: quer dizer mais sobre esse “tudo” ou apenas registrar o que já contou?'
+    'Quando você diz “tudo”, está pensando em alguma parte em especial?',
+    'Pode me explicar um pouco melhor o que quis dizer com “tudo”?'
   ];
   const used=new Set(Array.isArray(state?.usedQuestions)?state.usedQuestions:[]);
   return {
