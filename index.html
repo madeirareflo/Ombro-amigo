@@ -61,6 +61,7 @@
       </section>
 
       <div class="primary-paths" aria-label="Caminhos principais">
+        <button data-start="free" class="free-first-path"><span>Escrever livremente</span><small>Sem perguntas. Você escreve no seu ritmo e pede ajuda para organizar quando quiser.</small></button>
         <button data-start="session"><span>Preparar a próxima sessão</span><small>Organizar algo difícil de começar em voz alta.</small></button>
         <button data-start="event"><span>Organizar algo que aconteceu</span><small>Separar o que aconteceu do que ficou depois.</small></button>
         <button data-start="record"><span>Só registrar por enquanto</span><small>Guardar sem aprofundar nem receber novas perguntas.</small></button>
@@ -107,6 +108,14 @@
         <span data-progress="organize">Organizando</span>
         <span data-progress="review">Revisando</span>
       </nav>
+      <section id="free-writing-panel" class="free-writing-panel hidden" aria-label="Espaço de escrita livre">
+        <p class="lead">Este espaço é seu. Escreva com suas palavras, sem precisar responder a perguntas.</p>
+        <label for="free-writing-text">O que você gostaria de colocar em palavras?</label>
+        <textarea id="free-writing-text" rows="10" placeholder="Pode começar por qualquer parte. Não precisa estar organizado."></textarea>
+        <p id="free-writing-status" class="muted small" aria-live="polite">Use “Guardar texto” para salvar localmente antes de sair.</p>
+        <div class="actions"><button id="save-free-writing" type="button">Guardar texto</button><button id="organize-free-writing" class="secondary" type="button">Me ajude a organizar</button></div>
+        <button type="button" class="text-button danger-text" data-urgent-help>Preciso de ajuda urgente</button>
+      </section>
       <div id="messages" class="messages" aria-live="polite"></div>
       <form id="reply-form" class="reply-form">
         <label for="reply">Escreva do seu jeito</label>
@@ -130,7 +139,7 @@
       </nav>
       <p class="eyebrow">Síntese para revisar</p>
       <h2 id="summary-title" tabindex="-1">Isso representa o que você quis dizer?</h2>
-      <p class="muted">As frases marcadas “Você escreveu” vieram do seu relato. Ao editar, a marca muda para “Você editou”. A organização em seções é do aplicativo.</p>
+      <p class="muted">As frases marcadas “Você escreveu” vieram do seu relato, sem reescrita automática. Ao editar, a marca muda para “Você editou”. A organização em seções é do aplicativo.</p>
       <div class="provenance-legend" aria-label="Legenda de origem">
         <span><i class="legend-user"></i>Você escreveu</span>
         <span><i class="legend-edited"></i>Você editou</span>
