@@ -46,6 +46,27 @@ Com similaridade mínima 0,80 e margem mínima 0,08, o MiniLM rejeitou todas as 
 
 Estes valores NÃO estimam tempo ou RAM de Android/iPhone. Ainda faltam medições de navegador, bateria, armazenamento, frio/quente e rede realmente desligada.
 
+## Calibração pré-registrada — 64 frases fictícias de validação
+
+[GitHub Actions — validação 37866246943](https://github.com/madeirareflo/Ombro-amigo/actions/runs/37866246943)
+
+- O pipeline neural carregou em 920,8 ms no runner Linux e encerrou com 633,5 MiB RSS.
+- Sob os limites originais 0,80/0,08, aceitou 0 de 64 frases.
+- A varredura considerou 25 combinações previamente definidas de similaridade e margem.
+- Seleção sobre validação APENAS: similaridade mínima **0,50**, margem mínima **0,04**.
+- Com esses limites, **25/64 aceitas; 25/25 corretas** e **0 falsos acionamentos nas 24 frases de classes protegidas**.
+- Isso corresponde a 62,5% de cobertura das 40 frases de classes acionáveis na validação, mas o limite foi selecionado nesse próprio conjunto, portanto o resultado pode ser otimista.
+- Esses parâmetros ficam congelados para uma única avaliação no holdout (256 frases) e NÃO serão recalibrados com base no holdout.
+
+### Protocolo do holdout
+
+- Modelo e revisão: **2c4055b12046f11709e9df2c122e59ffbdc2f900**, q8.
+- Frases de treino por classe: **8** (inalteradas).
+- Split: **holdout** fixo de 256 frases, sem repetição das 64 famílias de validação.
+- Limiares: **similaridade 0,50** e **margem 0,04**.
+- Avaliar macro-F1 candidato, precisão de decisões aceitas, cobertura, abstenções e **falsos acionamentos em stop/skip/other**.
+- Um único falso acionamento de classe protegida bloqueia qualquer aproximação de uso real; zero falsos sintéticos não garante segurança clínica.
+- Após observar o resultado, NÃO usar o mesmo holdout para novas escolhas de limiar; criar nova amostra independente para qualquer iteração.
 ## Próximos passos e travas
 
 1. Varredura de limiares SOMENTE com as 64 frases sintéticas de validação, sem escolher limiares a partir do holdout.
