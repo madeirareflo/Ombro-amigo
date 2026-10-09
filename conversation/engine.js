@@ -1,3 +1,5 @@
+import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
+
 const START_QUESTIONS = {
   event: 'Isso tem mais a ver com algo que aconteceu ou com como você se sentiu depois?',
   session: 'O que torna esse assunto difícil de começar na sessão?',
@@ -72,7 +74,18 @@ const BOUNDARY_RULES = [
 const SENSITIVE_TOPIC_PATTERN = /\b(abuso|abusado|abusada|violência|violencia|estupro|agressão|agressao|assédio|assedio|luto|falecimento|morreu|morte|trauma|traumático|traumatica|traumática)\b/i;
 const UNCERTAINTY_PATTERN = /^(não sei|nao sei|sei lá|sei la|não faço ideia|nao faco ideia|difícil dizer|dificil dizer|não consigo explicar|nao consigo explicar|não sei o que sinto|nao sei o que sinto)[.!?]*$/i;
 
+// In record-only mode an explicit request to stop is a control command,
+// whereas a historical/quoted mention remains a literal note.
+const RECORD_STOP_PATTERN = /^(quero parar|prefiro parar(?: por aqui)?|chega por hoje|não quero continuar|nao quero continuar|não quero mais falar|nao quero mais falar|quero encerrar|por hoje é só|por hoje e so|não quero aprofundar|nao quero aprofundar)[?!.\s]*$/i;
+
 const CONTROL_INTENTS = [
+  {
+    key:'skip',
+    ruleId:'AUTONOMY-SKIP-01',
+    // An anchored user command: quoted, third-person and historical statements
+    // must not be interpreted as a request to skip.
+    pattern:/^(prefiro (?:não|nao) responder(?: (?:essa|esta|a) pergunta)?|(?:não|nao) quero responder(?: (?:essa|esta|a) pergunta)?|pula (?:essa|esta|a) pergunta|pular pergunta|pode pular(?: essa pergunta)?|quero pular(?: essa pergunta)?|passo essa(?: pergunta)?|me (?:faz|faça) outra pergunta)[?!.\s]*$/i
+  },
   {
     key:'clarify',
     ruleId:'CONV-CLARIFY-01',
@@ -277,14 +290,16 @@ export function openingQuestion(state) {
 export function nextQuestion(state, answer) {
   const text = String(answer || '').trim();
   const controlIntent = detectConversationControlIntent(text);
+  const recordStop = state.mode === 'record' && RECORD_STOP_PATTERN.test(text);
   const briefReply = (controlIntent || state.mode === 'record') ? null : classifyBriefReply(state, text);
   const context = ensureConversationContext(state);
   if (briefReply === 'scope_all') context.answerScope = 'all';
   if (UNCERTAINTY_PATTERN.test(text)) context.uncertaintyStreak += 1;
   else if (!controlIntent) context.uncertaintyStreak = 0;
 
-  state.skips = 0;
-  if (!controlIntent && !briefReply) {
+  if (controlIntent === 'skip') state.skips = Number(state.skips || 0) + 1;
+  else state.skips = 0;
+  if (!controlIntent && !briefReply && !recordStop) {
     state.entries.push({
       kind: 'user_statement',
       text,
@@ -297,10 +312,12 @@ export function nextQuestion(state, answer) {
   state.transcript.push({
     role: 'user',
     text,
-    ...(controlIntent ? { meta: 'control:'+controlIntent } : {})
+    ...(controlIntent ? { meta: 'control:'+controlIntent } : recordStop ? { meta:'control:stop' } : {})
   });
 
-  const turn = controlIntent === 'clarify'
+  const turn = controlIntent === 'skip'
+    ? skipTurn(state)
+    : controlIntent === 'clarify'
     ? clarificationTurn(state)
     : controlIntent === 'continue'
       ? continuationTurn(state)
@@ -309,6 +326,8 @@ export function nextQuestion(state, answer) {
             text: 'Certo. Vou usar apenas o que você já escreveu para montar uma síntese editável.',
             ruleId: 'AUTONOMY-SUMMARY-01'
           }
+        : recordStop
+          ? { text: 'Tudo bem. Podemos parar por aqui. Você pode voltar quando quiser.', ruleId: 'AUTONOMY-SKIP-01' }
         : state.mode === 'record'
           ? {
               text: 'Registrado. Se quiser, você pode usar “Me ajuda a dizer isso” para organizar o que escreveu ou encerrar por aqui.',
@@ -327,6 +346,7 @@ export function nextQuestion(state, answer) {
   state.lastQuestion = turn.text;
   state.lastRuleId = turn.ruleId;
   recordRule(state, turn.ruleId);
+  rememberGuidedResponse(state, turn);
   markQuestionUsed(state, turn.text);
   noteQuestionContext(state, turn.text);
   state.transcript.push({ role: 'ai', text: turn.text });
@@ -343,18 +363,23 @@ export function skipQuestion(state) {
     meta: 'skip'
   });
 
-  const question = state.skips >= 2
-    ? 'Sem problema. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
-    : 'Sem problema. Podemos ir por outro caminho: você prefere falar do que aconteceu, de como ficou depois, ou ir direto para uma síntese?';
-  const ruleId='AUTONOMY-SKIP-01';
+  const turn=skipTurn(state);
+  state.lastQuestion = turn.text;
+  state.lastRuleId = turn.ruleId;
+  recordRule(state, turn.ruleId);
+  markQuestionUsed(state, turn.text);
+  noteQuestionContext(state, turn.text);
+  state.transcript.push({ role: 'ai', text: turn.text });
+  return turn.text;
+}
 
-  state.lastQuestion = question;
-  state.lastRuleId = ruleId;
-  recordRule(state, ruleId);
-  markQuestionUsed(state, question);
-  noteQuestionContext(state, question);
-  state.transcript.push({ role: 'ai', text: question });
-  return question;
+function skipTurn(state) {
+  return {
+    text: state.skips >= 2
+      ? 'Sem problema. Podemos parar por aqui. Você pode usar “Me ajuda a dizer isso” com o que já contou ou voltar quando quiser.'
+      : 'Sem problema. Podemos ir por outro caminho: você prefere falar do que aconteceu, de como ficou depois, ou ir direto para uma síntese?',
+    ruleId: 'AUTONOMY-SKIP-01'
+  };
 }
 
 export function detectConversationControlIntent(answer) {
@@ -397,6 +422,9 @@ function continuationTurn(state) {
       if (candidate) return { text:candidate, ruleId:matchedSignal.ruleId };
     }
   }
+
+  const guided = selectGuidedResponse(state, { channel: 'continue' });
+  if (guided) return guided;
 
   const pool=CONTINUATION_QUESTIONS[state.depth] || CONTINUATION_QUESTIONS.light;
   const candidate=firstUnused(state,pool) ||
@@ -473,6 +501,11 @@ export function chooseAdaptiveTurn(state, answer) {
       ruleId: 'AUTONOMY-CHECKPOINT-01'
     };
   }
+
+  // Only neutral, non-sensitive fallbacks reach this catalog. Guards, controls,
+  // declared signal reflection and autonomy checkpoints have already run.
+  const guided = selectGuidedResponse(state, { channel: 'fallback' });
+  if (guided) return guided;
 
   const fallbackPool = GENERIC_FALLBACKS[state.depth] || GENERIC_FALLBACKS.light;
   const fallback = firstUnused(state, fallbackPool);
