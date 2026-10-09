@@ -60,6 +60,7 @@ let session=null;
 let currentView='onboarding';
 let summaryApproved=false;
 let summaryModel=null;
+const collapsedSummarySections=new Set();
 let freeSaveTimer=null;
 let freeSaveVersion=0;
 
@@ -133,9 +134,24 @@ function findSummaryItem(itemId){
     .find(node=>node.dataset.itemId===String(itemId)) || null;
 }
 
+function revealSummaryControl(target){
+  const body=target?.closest('.summary-section-body');
+  if(!body?.hidden)return;
+  body.hidden=false;
+  const section=target.closest('[data-section-id]');
+  const id=section?.dataset.sectionId;
+  if(id)collapsedSummarySections.delete(id);
+  const fold=section?.querySelector('.summary-section-fold');
+  if(fold){
+    fold.setAttribute('aria-expanded','true');
+    const count=section.querySelectorAll('.summary-item').length;
+    fold.textContent='Recolher trechos ('+count+')';
+  }
+}
 function focusSummaryItem(itemId,{select=false}={}){
   const target=findSummaryItem(itemId);
   if(!target) return false;
+  revealSummaryControl(target);
   target.focus();
   if(select) target.select();
   return true;
@@ -144,6 +160,7 @@ function focusSummaryItem(itemId,{select=false}={}){
 function focusSummaryAdd(sectionId){
   const target=[...summaryEditor.querySelectorAll('button[data-add-section]')]
     .find(node=>node.dataset.addSection===String(sectionId)) || null;
+  if(target)revealSummaryControl(target);
   target?.focus();
   return Boolean(target);
 }
@@ -168,14 +185,32 @@ function renderSummaryEditor(){
     const structure=document.createElement('span');
     structure.className='structure-badge';
     structure.textContent='Estrutura do app';
-    header.append(title,structure);
-    wrapper.appendChild(header);
+    const fold=document.createElement('button');
+    fold.type='button';
+    fold.className='summary-section-fold';
+    const sectionBody=document.createElement('div');
+    sectionBody.className='summary-section-body';
+    sectionBody.id='summary-content-'+section.id;
+    sectionBody.hidden=collapsedSummarySections.has(section.id);
+    fold.setAttribute('aria-controls',sectionBody.id);
+    fold.setAttribute('aria-expanded',String(!sectionBody.hidden));
+    const label=()=>sectionBody.hidden?'Mostrar trechos ('+section.items.length+')':'Recolher trechos ('+section.items.length+')';
+    fold.textContent=label();
+    fold.addEventListener('click',()=>{
+      sectionBody.hidden=!sectionBody.hidden;
+      if(sectionBody.hidden)collapsedSummarySections.add(section.id);
+      else collapsedSummarySections.delete(section.id);
+      fold.setAttribute('aria-expanded',String(!sectionBody.hidden));
+      fold.textContent=label();
+    });
+    header.append(title,structure,fold);
+    wrapper.append(header,sectionBody);
 
     if(!section.items.length){
       const empty=document.createElement('p');
       empty.className='empty-section';
       empty.textContent='Ainda não ficou claro no que você escreveu.';
-      wrapper.appendChild(empty);
+      sectionBody.appendChild(empty);
     }
 
     for(const item of section.items){
@@ -244,7 +279,7 @@ function renderSummaryEditor(){
         moveControls.appendChild(move);
       }
       row.append(area,badge,moveControls,remove);
-      wrapper.appendChild(row);
+      sectionBody.appendChild(row);
     }
 
     const add=document.createElement('button');
@@ -262,12 +297,13 @@ function renderSummaryEditor(){
       if(addedId) focusSummaryItem(addedId,{select:true});
       void persist('summary');
     });
-    wrapper.appendChild(add);
+    sectionBody.appendChild(add);
     summaryEditor.appendChild(wrapper);
   }
 }
 
 function createOrRestoreSummary(savedModel=null){
+  collapsedSummarySections.clear();
   const structured=buildStructuredSummary(session);
   summaryModel=normalizeSummaryModel(savedModel) || (session?.mode==='free'
     ? normalizeSummaryModel(highlightedExtractiveSummary((session.entries||[]).map(entry=>entry.text).join('\n\n'),session.userHighlight))
