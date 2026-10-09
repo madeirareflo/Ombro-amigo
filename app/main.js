@@ -19,6 +19,7 @@ import {
   createSummaryModel,
   normalizeSummaryModel,
   summaryModelToText,
+  freeWritingSummaryToText,
   addEditedItem,
   removeSummaryItem
 } from './summary-model.js';
@@ -110,10 +111,9 @@ function legacyTranscript(savedSession){
 }
 
 function syncSummaryText(){
-  const result=summaryModelToText(summaryModel);
   summaryText.value=session?.mode==='free'
-    ? result.replace('O que aconteceu','Trechos do meu relato (sem reescrita)')
-    : result;
+    ? freeWritingSummaryToText(summaryModel)
+    : summaryModelToText(summaryModel);
 }
 
 function invalidateSummaryApproval(){
@@ -201,6 +201,7 @@ function renderSummaryEditor(){
         item.text=area.value;
         item.origin='edited';
         delete item.source;
+        row.querySelector('.source-evidence')?.remove();
         badge.textContent='Você editou';
         invalidateSummaryApproval();
         syncSummaryText();
