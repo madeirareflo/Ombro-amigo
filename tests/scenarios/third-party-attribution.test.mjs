@@ -125,3 +125,29 @@ test('ambiguous eu também is clarified instead of inheriting someone else emoti
   assert.deepEqual(buildStructuredSummary(state).emotions,[]);
   assert.deepEqual(buildStructuredSummary(state).facts,[phrase]);
 });
+
+
+test('third-party reflections do not repeat the same question across turns', () => {
+  const state=createConversation({mode:'session',depth:'deep'});
+  openingQuestion(state);
+  const responses=[];
+  for (const phrase of [
+    'Minha amiga ficou triste ontem.',
+    'Meu irmão estava assustado.',
+    'Ela falou que se sente sozinha ultimamente.',
+    'Meu colega relatou ansiedade.'
+  ]) responses.push(nextQuestion(state,phrase));
+  assert.equal(new Set(responses).size,responses.length);
+  assert.equal(state.entries.length,4);
+  assert.ok((responses[3].match(/\?/g)||[]).length<=1);
+  assert.deepEqual(buildStructuredSummary(state).emotions,[]);
+});
+
+test('ambiguous eu também variations are not repeated back verbatim', () => {
+  const state=createConversation({mode:'session',depth:'deep'});
+  openingQuestion(state);
+  const first=nextQuestion(state,'Ela disse que ficou triste e eu também.');
+  const second=nextQuestion(state,'Meu amigo ficou triste e eu também.');
+  assert.notEqual(first,second);
+  assert.deepEqual(buildStructuredSummary(state).emotions,[]);
+});
