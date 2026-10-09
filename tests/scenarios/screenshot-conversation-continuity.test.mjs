@@ -19,7 +19,7 @@ test('screen-reproduction: motivation scope -> loneliness -> tudo stays connecte
   assert.equal((first.match(/\?/g)||[]).length,1);
 
   const second=nextQuestion(state,'eme sinto solitario');
-  assert.match(second,/quando você costuma se sentir assim/i);
+  assert.match(second,/você disse que se sente só|momento específico/i);
   assert.doesNotMatch(second,/próxima sessão|material suficiente|diagnóstico/i);
   assert.equal((second.match(/\?/g)||[]).length,1);
 
