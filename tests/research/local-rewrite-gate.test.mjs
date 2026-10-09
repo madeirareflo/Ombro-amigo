@@ -4,7 +4,8 @@ import {assessRewriteProposal,buildSafeExtractiveFallback} from '../../research/
 import {hasExactProvenance} from '../../app/extractive-summary.js';
 
 const source='Ultimamente me sinto triste. Tenho dificuldade de contar isso na sessão.';
-const evidence=[{start:0,end:27,text:'Ultimamente me sinto triste.'}];
+const originalFragment='Ultimamente me sinto triste.';
+const evidence=[{start:0,end:originalFragment.length,text:originalFragment}];
 
 test('rewrite requires human verification even when all evidence matches',()=>{
   const p={text:'Ultimamente me sinto triste.',evidence};
