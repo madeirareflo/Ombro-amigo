@@ -7,6 +7,7 @@ import {resolve,join,sep} from 'node:path';
 import {stat,readFile,readdir,writeFile} from 'node:fs/promises';
 import {performance} from 'node:perf_hooks';
 import {assessRewriteProposal} from '../research/local-rewrite-gate.js';
+import {extractCandidateText} from '../research/model-output-shape.js';
 import {preflightLocalBundle} from '../research/offline-bundle-preflight.js';
 
 export const CANDIDATE='onnx-community/Qwen3-0.6B-ONNX';
@@ -80,10 +81,10 @@ export async function runOfflineTrial({root,wasmRoot,modelId=CANDIDATE,device='w
     const output=await generator(prompt(fixture.input),{
       max_new_tokens:130,do_sample:false,return_full_text:false
     });
-    const generated=output?.[0]?.generated_text;
-    const text=typeof generated==='string'?generated:
-      Array.isArray(generated)?String(generated.at(-1)?.content||''):'';
+    const extracted=extractCandidateText(output,{original:fixture.input});
+    const text=extracted.ok?extracted.text:'';
     const metrics=measureCandidate(text,fixture.input,performance.now()-start);
+    if(!extracted.ok){metrics.gateStatus='reject';metrics.redFlags=[...metrics.redFlags,extracted.reason];}
     rows.push({id:fixture.id,...metrics});
     if(reviewOutput)reviews.push({id:fixture.id,original:fixture.input,candidate:text,
       checks:{gateStatus:metrics.gateStatus,redFlags:metrics.redFlags},
