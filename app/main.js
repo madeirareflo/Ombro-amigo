@@ -109,7 +109,10 @@ function legacyTranscript(savedSession){
 }
 
 function syncSummaryText(){
-  summaryText.value=summaryModelToText(summaryModel);
+  const result=summaryModelToText(summaryModel);
+  summaryText.value=session?.mode==='free'
+    ? result.replace('O que aconteceu','Meu relato original (sem reescrita)')
+    : result;
 }
 
 function invalidateSummaryApproval(){
@@ -151,7 +154,9 @@ function renderSummaryEditor(){
     header.className='summary-section-header';
     const title=document.createElement('h3');
     title.id='summary-section-'+section.id+'-title';
-    title.textContent=section.title;
+    title.textContent=session?.mode==='free' && section.id==='facts'
+      ? 'Meu relato original (sem reescrita)'
+      : section.title;
     wrapper.setAttribute('aria-labelledby',title.id);
     const structure=document.createElement('span');
     structure.className='structure-badge';
