@@ -611,7 +611,7 @@ function classifyDeclaredContent(text) {
     categories.push('emotion');
   }
 
-  if (/\b(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei|difícil falar|dificil falar|difícil dizer|dificil dizer|tenho vergonha de falar|tenho medo de contar)\b/i.test(value)) {
+  if (/\b(evito|evitando|não consigo falar|nao consigo falar|não contei|nao contei|escondo|mudo de assunto|travo|travei|difícil falar|dificil falar|difícil dizer|dificil dizer|tenho vergonha de (?:falar|contar)|tenho medo de contar)\b/i.test(value)) {
     categories.push('difficulty');
   }
 
