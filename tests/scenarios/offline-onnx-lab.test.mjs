@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
-  cosineVector, validateLocalModelManifest, classifyWithLocalEmbedding,
+  cosineVector, validateLocalModelManifest, classifyWithLocalEmbedding, sweepLocalEmbeddingThresholds,
   OFFLINE_EMBEDDING_LAB_VERSION
 } from '../../scripts/lib/offline-onnx-lab.mjs';
+import { evaluateIntentRows } from '../../scripts/lib/intent-evaluation-v2.mjs';
 
 const manifest = {
   modelName: 'ptbr-encoder-q8',
@@ -90,4 +91,34 @@ test('optional ONNX executable parses arguments without loading models or networ
   assert.equal(missing.status, 2, missing.stderr);
   assert.match(missing.stderr, /model-root and model-name are required/);
   assert.doesNotMatch(missing.stderr, /https?:\/\//);
+});
+
+
+test('validation-only sweep proposes candidates only if precision and protected controls pass', () => {
+  const labelVectors = { clarify: [[1, 0]], stop: [[0, 1]] };
+  const rows = [
+    { label: 'clarify', text: 'Como assim?', questionDimension: null },
+    { label: 'stop', text: 'Quero encerrar', questionDimension: null }
+  ];
+  const vectors = [[1, 0], [0, 1]];
+  const sweep = sweepLocalEmbeddingThresholds(rows, vectors, labelVectors, evaluateIntentRows);
+  assert.equal(sweep.gridCount, 25);
+  assert.ok(sweep.eligibleCount > 0);
+  assert.equal(sweep.bestValidationOnly.protectedFalseActivations, 0);
+  assert.equal(sweep.bestValidationOnly.acceptedPrecision, 1);
+  assert.equal(sweep.bestValidationOnly.safeCoverage, 1);
+  assert.equal(sweep.releaseReady, false);
+});
+
+test('sweep never recommends a threshold with false action on protected narrative', () => {
+  const labelVectors = { summary: [[1, 0]], stop: [[0, 1]] };
+  const rows = [
+    { label: 'summary', text: 'Preciso de uma síntese', questionDimension: null },
+    { label: 'other', text: 'Ela perguntou por que quis resumir', questionDimension: null }
+  ];
+  const vectors = [[1, 0], [1, 0]];
+  const sweep = sweepLocalEmbeddingThresholds(rows, vectors, labelVectors, evaluateIntentRows);
+  assert.equal(sweep.bestValidationOnly, null);
+  assert.equal(sweep.eligibleCount, 0);
+  assert.equal(sweep.releaseReady, false);
 });
