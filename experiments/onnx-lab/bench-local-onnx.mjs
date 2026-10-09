@@ -12,7 +12,7 @@ import {
   partitionByFamily, validateEvaluationFixtures, evaluateIntentRows, selectBalancedEvaluation
 } from '../../scripts/lib/intent-evaluation-v2.mjs';
 import {
-  validateLocalModelManifest, classifyWithLocalEmbedding, OFFLINE_EMBEDDING_LAB_VERSION
+  validateLocalModelManifest, classifyWithLocalEmbedding, sweepLocalEmbeddingThresholds, OFFLINE_EMBEDDING_LAB_VERSION
 } from '../../scripts/lib/offline-onnx-lab.mjs';
 
 function parseArgs(args) {
@@ -108,8 +108,10 @@ async function main() {
     }
   }
   const predictions = [];
+  const evaluationVectors = [];
   for (const row of all) {
     const vector = await embed(row.text);
+    evaluationVectors.push(vector);
     predictions.push(classifyWithLocalEmbedding(vector, {
       labelVectors, text: row.text, lastQuestionDimension: row.questionDimension,
       minimumSimilarity: options.similarity, minimumMargin: options.margin
@@ -119,6 +121,9 @@ async function main() {
   const embedMetrics = evaluateIntentRows(all, () => predictions[i++]);
   const lexicalMetrics = evaluateIntentRows(all, row =>
     classifyLocalIntent(row.text, { lastQuestionDimension: row.questionDimension }));
+  const validationSweep = options.split === 'validation'
+    ? sweepLocalEmbeddingThresholds(all, evaluationVectors, labelVectors, evaluateIntentRows)
+    : null;
   timings.sort((a, b) => a - b);
   const report = {
     schemaVersion: OFFLINE_EMBEDDING_LAB_VERSION,
@@ -132,6 +137,7 @@ async function main() {
     thresholds: { similarity: options.similarity, margin: options.margin },
     lexicalMetrics,
     embeddingMetrics: embedMetrics,
+    validationSweep,
     releaseReady: false,
     note: 'SYNTHETIC DATA ONLY. Local filesystem pack with SHA-256 manifest. This is a lab comparison, not clinical approval.'
   };
