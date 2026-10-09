@@ -22,7 +22,8 @@ import {
   summaryModelToText,
   freeWritingSummaryToText,
   addEditedItem,
-  removeSummaryItem
+  removeSummaryItem,
+  moveSummaryItem
 } from './summary-model.js';
 
 const $=selector=>document.querySelector(selector);
@@ -222,7 +223,27 @@ function renderSummaryEditor(){
         if(!fallbackId || !focusSummaryItem(fallbackId)) focusSummaryAdd(section.id);
         void persist('summary');
       });
-      row.append(area,badge,remove);
+      const position=section.items.indexOf(item);
+      const moveControls=document.createElement('div');
+      moveControls.className='summary-move-controls';
+      for(const [direction,label] of [[-1,'Subir'],[1,'Descer']]){
+        const move=document.createElement('button');
+        move.type='button';
+        move.className='move-summary-item';
+        move.textContent=label;
+        move.disabled=direction===-1?position===0:position===section.items.length-1;
+        move.setAttribute('aria-label',label+' trecho em '+section.title);
+        move.addEventListener('click',()=>{
+          summaryModel=moveSummaryItem(summaryModel,section.id,item.id,direction);
+          invalidateSummaryApproval();
+          syncSummaryText();
+          renderSummaryEditor();
+          focusSummaryItem(item.id);
+          void persist('summary');
+        });
+        moveControls.appendChild(move);
+      }
+      row.append(area,badge,moveControls,remove);
       wrapper.appendChild(row);
     }
 
