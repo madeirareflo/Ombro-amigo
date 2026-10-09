@@ -101,7 +101,6 @@ test('uncertainty and ambiguous reported content stay outside attribution', () =
     'Ouvi que alguém estava triste.',
     'Eu não tenho certeza de como me sinto.',
     '',
-    'Ela disse que ficou triste e eu também.',
     'Me sinto triste e penso na minha irmã.'
   ]) {
     assert.equal(isThirdPartyOnlyEmotionReport(phrase),false,phrase);
@@ -112,4 +111,17 @@ test('attribution layer contains no neural, network or persistence calls', async
   const {readFile}=await import('node:fs/promises');
   const source=await readFile(new URL('../../conversation/third-party-attribution.js',import.meta.url),'utf8');
   assert.doesNotMatch(source,/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|onnx|transformers|indexedDB|localStorage/i);
+});
+
+
+test('ambiguous eu também is clarified instead of inheriting someone else emotion', () => {
+  const phrase='Ela disse que ficou triste e eu também.';
+  assert.equal(isThirdPartyOnlyEmotionReport(phrase),true);
+  const state=createConversation({mode:'session',depth:'deep'});
+  openingQuestion(state);
+  const response=nextQuestion(state,phrase);
+  assert.match(response,/“eu também”/i);
+  assert.match(response,/explicar com suas palavras/i);
+  assert.deepEqual(buildStructuredSummary(state).emotions,[]);
+  assert.deepEqual(buildStructuredSummary(state).facts,[phrase]);
 });
