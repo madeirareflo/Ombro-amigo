@@ -14,6 +14,7 @@ import {
 } from '../storage/secure-store.js';
 import { urgentHelpGuidance, detectExplicitImmediateDanger, assessSafety } from '../safety/policy.js';
 import { copyText } from './clipboard.js';
+import { extractTraceableSummary, hasExactProvenance } from './extractive-summary.js';
 import {
   createSummaryModel,
   normalizeSummaryModel,
@@ -111,7 +112,7 @@ function legacyTranscript(savedSession){
 function syncSummaryText(){
   const result=summaryModelToText(summaryModel);
   summaryText.value=session?.mode==='free'
-    ? result.replace('O que aconteceu','Meu relato original (sem reescrita)')
+    ? result.replace('O que aconteceu','Trechos do meu relato (sem reescrita)')
     : result;
 }
 
@@ -154,8 +155,8 @@ function renderSummaryEditor(){
     header.className='summary-section-header';
     const title=document.createElement('h3');
     title.id='summary-section-'+section.id+'-title';
-    title.textContent=session?.mode==='free' && section.id==='facts'
-      ? 'Meu relato original (sem reescrita)'
+    title.textContent=session?.mode==='free'
+      ? ({facts:'Trechos do meu relato',emotions:'Sentimentos que nomeei',difficulties:'O que eu disse estar difícil',sessionPoints:'O que quero levar à sessão'}[section.id] || section.title)
       : section.title;
     wrapper.setAttribute('aria-labelledby',title.id);
     const structure=document.createElement('span');
@@ -184,6 +185,12 @@ function renderSummaryEditor(){
       badge.className='origin-badge';
       badge.textContent=item.origin==='edited'?'Você editou':'Você escreveu';
       area.setAttribute('aria-describedby',badge.id);
+      if(session?.mode==='free' && item.source && hasExactProvenance(session.entries?.[0]?.text,item)){
+        const evidence=document.createElement('small');
+        evidence.className='source-evidence';
+        evidence.textContent='Trecho original: '+item.text;
+        row.appendChild(evidence);
+      }
       const remove=document.createElement('button');
       remove.type='button';
       remove.className='remove-item';
@@ -193,6 +200,7 @@ function renderSummaryEditor(){
       area.addEventListener('input',()=>{
         item.text=area.value;
         item.origin='edited';
+        delete item.source;
         badge.textContent='Você editou';
         invalidateSummaryApproval();
         syncSummaryText();
@@ -233,10 +241,10 @@ function renderSummaryEditor(){
 }
 
 function createOrRestoreSummary(savedModel=null){
-  const structured=session?.mode==='free'
-    ? {facts:(session.entries||[]).map(entry=>entry.text).filter(Boolean),emotions:[],difficulties:[],sessionPoints:[]}
-    : buildStructuredSummary(session);
-  summaryModel=normalizeSummaryModel(savedModel) || createSummaryModel(structured);
+  const structured=buildStructuredSummary(session);
+  summaryModel=normalizeSummaryModel(savedModel) || (session?.mode==='free'
+    ? normalizeSummaryModel(extractTraceableSummary((session.entries||[]).map(entry=>entry.text).join('\n\n')))
+    : createSummaryModel(structured));
   syncSummaryText();
   renderSummaryEditor();
   invalidateSummaryApproval();
