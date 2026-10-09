@@ -1,6 +1,7 @@
 import { selectGuidedResponse, rememberGuidedResponse } from './neutral-response-catalog.js';
 import { selectGroundedFollowup, groundedBriefReference, isExplicitLonelinessDeclaration } from './grounded-followups.js';
 import { isDirectStopCommand } from './autonomy-commands.js';
+import { isThirdPartyOnlyEmotionReport, thirdPartyReportTurn } from './third-party-attribution.js';
 
 const START_QUESTIONS = {
   event: 'Isso tem mais a ver com algo que aconteceu ou com como você se sentiu depois?',
@@ -489,6 +490,11 @@ export function chooseAdaptiveTurn(state, answer) {
     if(candidate) return { text:candidate,ruleId:'CONV-REFLECT-01' };
   }
 
+  // Do not reflexively attribute an emotion a person reported ABOUT somebody
+  // else to the speaker. This branch comes after safety and explicit controls.
+  const attributedThirdParty = thirdPartyReportTurn(text);
+  if (attributedThirdParty) return attributedThirdParty;
+
   const matchedSignal = SIGNALS.find(signal => signal.pattern.test(text));
   if (matchedSignal) {
     const candidate = firstUnused(state, matchedSignal.questions);
@@ -595,7 +601,7 @@ function classifyDeclaredContent(text) {
   if (UNCERTAINTY_PATTERN.test(value)) return ['uncertainty'];
   if (/^(em\s+)?tudo\s+isso[.!?]*$/i.test(value) || /^em\s+todas\s+(essas\s+)?áreas[.!?]*$/i.test(value)) return ['control'];
 
-  if (isExplicitLonelinessDeclaration(value) || /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value)) {
+  if (isExplicitLonelinessDeclaration(value) || (!isThirdPartyOnlyEmotionReport(value) && /\b(raiva|triste|tristeza|vergonha|medo|culpa|ansioso|ansiosa|ansiedade|alívio|alivio|frustrado|frustrada|decepcionado|decepcionada|assusta|assustado|assustada|assustador|assustadora)\b/i.test(value))) {
     categories.push('emotion');
   }
 
