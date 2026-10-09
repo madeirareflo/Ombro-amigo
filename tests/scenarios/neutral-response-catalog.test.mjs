@@ -119,3 +119,50 @@ test('no external imports, network or model inference occur in this selector', a
   const source=await readFile(new URL('../../conversation/neutral-response-catalog.js',import.meta.url),'utf8');
   assert.doesNotMatch(source, /\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|onnxruntime|transformers\.js|localStorage|indexedDB/i);
 });
+
+
+test('natural skip commands in chat use the same deterministic autonomy route as the skip button', () => {
+  const state = createConversation({ mode:'session', depth:'deep' });
+  openingQuestion(state);
+  const first = nextQuestion(state, 'Prefiro não responder essa pergunta.');
+  assert.equal(detectConversationControlIntent('Prefiro não responder essa pergunta.'), 'skip');
+  assert.match(first, /outro caminho|síntese/i);
+  assert.equal(state.entries.length, 0);
+  assert.equal(state.transcript.at(-2).meta, 'control:skip');
+  assert.deepEqual(state.context.catalogHistory || [], []);
+  const second = nextQuestion(state, 'Pula essa pergunta');
+  assert.match(second, /parar por aqui|voltar quando quiser/i);
+  assert.equal(state.entries.length, 0);
+  assert.equal(state.transcript.at(-2).meta, 'control:skip');
+  const structured = buildStructuredSummary(state);
+  assert.deepEqual(structured, {
+    facts: [], emotions: [], difficulties: [], sessionPoints: []
+  });
+});
+
+test('quoted or third-person skip language remains a statement, not a command', () => {
+  const samples = [
+    'Ela disse que prefere não responder.',
+    'Ontem meu amigo falou que queria pular a pergunta.',
+    'Minha irmã me pediu para fazer outra pergunta.'
+  ];
+  for (const message of samples) {
+    assert.equal(detectConversationControlIntent(message), null, message);
+    const state=createConversation({ mode:'event', depth:'medium' });
+    openingQuestion(state);
+    nextQuestion(state, message);
+    assert.equal(state.entries.length, 1, message);
+    assert.equal(state.entries[0].text, message);
+  }
+});
+
+test('skip button and typed skip both preserve independent transcript history', () => {
+  const state = createConversation({ mode:'feeling', depth:'medium' });
+  openingQuestion(state);
+  skipQuestion(state);
+  const typed=nextQuestion(state,'Pular pergunta');
+  assert.match(typed,/parar por aqui|voltar quando quiser/i);
+  assert.equal(state.skips,2);
+  assert.equal(state.entries.length,0);
+  assert.equal(state.transcript.filter(x=>x.role==='user').length,2);
+});
