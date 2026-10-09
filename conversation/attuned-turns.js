@@ -19,16 +19,16 @@ const DECLARATIONS = Object.freeze([
     // First-person declaration, not a quote, negation, or attributed feeling.
     pattern: /^(?:eu )?(?:estou|to|me sinto|eu me sinto) (?:muito )?(?:triste|chatead[oa]|abatid[oa])(?: (?:hoje|ultimamente|agora))?$/,
     responses: [
-      'Você falou que está triste. Quer contar o que gostaria de registrar sobre isso ou prefere só deixar anotado por enquanto?',
-      'Podemos ficar nas suas palavras, sem procurar uma explicação agora. Gostaria de acrescentar algo sobre essa tristeza?'
+      'Você falou de como está se sentindo. Quer contar o que gostaria de registrar sobre isso ou prefere só deixar anotado por enquanto?',
+      'Podemos ficar nas suas palavras, sem procurar uma explicação agora. Gostaria de acrescentar algo sobre esse sentimento?'
     ]
   },
   {
     id: 'anxiety',
     pattern: /^(?:eu )?(?:estou|to|me sinto|eu me sinto) (?:muito )?(?:ansios[oa]|nervos[oa]|preocupad[oa])(?: (?:hoje|ultimamente|agora))?$/,
     responses: [
-      'Você mencionou estar ansioso ou preocupado. O que seria importante registrar sobre esse momento?',
-      'Não precisamos chegar a uma conclusão agora. Você quer contar algo mais sobre essa preocupação ou deixar assim?'
+      'Você mencionou como está se sentindo. O que seria importante registrar sobre esse momento?',
+      'Não precisamos chegar a uma conclusão agora. Você quer contar algo mais sobre isso ou deixar assim?'
     ]
   },
   {
